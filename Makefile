@@ -5,9 +5,11 @@ BDIR = ./bin
 TDIR = ./test
 CUDADIR = /usr/local/cuda/samples/common/inc/
 CC = nvcc
-DCIFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -O2 -I$(IDIR)
-DCITESTFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -g -G -O2 -I$(IDIR)
+
+DCIFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -O2 -I $(IDIR)
+DCITESTFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -g -G -O2 -I $(IDIR)
 QUERYFLAGS = -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -I $(CUDADIR) -I $(IDIR)
+KMPSOFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -O2 -I $(IDIR)
 
 _DCIDEPS = dci.h
 DCIDEPS = $(patsubst %,$(IDIR)/%,$(_DCIDEPS))
@@ -24,6 +26,10 @@ QUERYDEPS = $(patsubst %,$(CUDADIR)/%,$(_QUERYDEPS))
 _QUERYSRC = device_query.cpp
 QUERYSRC = $(patsubst %,$(TDIR)/%,$(_QUERYSRC))
 QUERYOBJ = device_query.o
+
+_KMPSOSRC = kmpso.cu
+KMPSOSRC = $(patsubst %,$(SDIR)/%,$(_KMPSOSRC))
+KMPSOOBJ = kmpso.o
 
 $(DCIOBJ): $(DCISRC) $(DCIDEPS)
 	$(CC) -c -o $@ $< $(DCIFLAGS)
@@ -48,3 +54,11 @@ query: $(QUERYOBJ)
 	$(CC) -o $@ $^ $(QUERYFLAGS)
 	mv $@ $(BDIR)
 	rm $(QUERYOBJ)
+
+$(KMPSOOBJ): $(KMPSOSRC) $(DCIDEPS)
+	$(CC) -c -o $@ $< $(KMPSOFLAGS)
+
+kmpso: $(KMPSOOBJ)
+	$(CC) -o $@ $^ $(KMPSOFLAGS)
+	mv $@ $(BDIR)
+	rm $(KMPSOOBJ)
