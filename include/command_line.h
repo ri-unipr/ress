@@ -4,14 +4,14 @@
  * and open the template in the editor.
  */
 
-/* 
+/*
  * File:   command_line.h
  * Author: e.vicari
  *
  * Created on 1 marzo 2016, 12.13
- * 
+ *
  * Utilities for command line parsing
- * 
+ *
  */
 
 #ifndef COMMAND_LINE_H
@@ -24,15 +24,15 @@
 
 namespace dci
 {
-    
+
     // struct holding execution configuration coming from command-line
     struct RunInfo
     {
-        
+        bool tc;                           // if true, use Tc as index
         bool zi;                            // if true, use ZI as index
         bool si;                            // if true, use the strength index as index
         bool si2;
-        
+
         bool show_device_stats;             // if true, device stats are shown at startup
         bool verbose;                       // verbose computation
         bool silent;                        // silent computation (overrides verbose flag)
@@ -57,23 +57,24 @@ namespace dci
         std::string error_message;          // error message (relevant only if good_config is false)
         unsigned int num_blocks;            // number of parallel execution blocks
         unsigned int num_threads;           // number of parallel threads per block
-        
+
         unsigned int hs_count;              // number of homogeneous system clusters for each class
-        
+
         std::string sieving_out;         // output file for new system after sieving procedure
         bool delete_input;                  // if true, input file is deleted after data is loaded
+        bool tc_index;
         bool zi_index;
         bool strength_index;
         bool strength2_index;
-        
-        
-        RunInfo() 
-        { 
-            
-            zi_index=false; 
+
+
+        RunInfo()
+        {
+            tc_index = false;
+            zi_index=false;
             strength_index=false;
             strength2_index=false;
-            show_device_stats = false; 
+            show_device_stats = false;
             verbose = false;
             silent = false;
             tune = false;
@@ -100,25 +101,25 @@ namespace dci
             delete_input = false;
         }
     };
-    
+
     // typedef for struct pointer
     using RunInfo_p = std::unique_ptr<RunInfo>;
-    
+
     /*
      * Processes command-line arguments to retrieve execution configuration
      */
     RunInfo_p ProcessCommandLine(int argc, char** argv)
     {
-        
+
         // constructor sets default values
         RunInfo_p pointer_to_data(new RunInfo());
         int pos;
-        
+
         // cycle all command-line arguments
         for (int i = 1; i < argc; ++i)
         {
             std::string arg(argv[i]);
-            
+
             /*
              * input filename retrieval
              */
@@ -131,7 +132,7 @@ namespace dci
                 }
                 pointer_to_data->input_file_name = arg;
             }
-            
+
             /*
              * flags
              */
@@ -149,11 +150,13 @@ namespace dci
                 pointer_to_data->sieving = true;
             else if (arg == "--delete-input") // delete input file after reading
                 pointer_to_data->delete_input = true;
-            else if (arg == "--si") 
+            else if (arg == "--tc")
+                pointer_to_data->tc_index = true;
+            else if (arg == "--si")
                 pointer_to_data->strength_index = true;
-            else if (arg == "--zi") 
+            else if (arg == "--zi")
                 pointer_to_data->zi_index = true;
-            else if (arg == "--si2") 
+            else if (arg == "--si2")
                 pointer_to_data->strength2_index = true;
             /*
              * valued parameters
@@ -166,10 +169,10 @@ namespace dci
                     pointer_to_data->error_message = "no value specified for argument: " + arg;
                     return pointer_to_data;
                 }
-                
+
                 std::string name = arg.substr(0, pos);
                 std::string value = arg.substr(pos + 1);
-                
+
                 if (name ==  "--out")
                     pointer_to_data->output_file_name = value;
                 else if (name == "--hs-in")
@@ -266,7 +269,7 @@ namespace dci
                     return pointer_to_data;
                 }
             }
-            
+
             /*
              * unknown parameters
              */
@@ -276,29 +279,30 @@ namespace dci
                 return pointer_to_data;
             }
         }
-        
+
         if (pointer_to_data->input_file_name == "") // check if input file has been specified
         {
             pointer_to_data->error_message = "input file not specified";
             return pointer_to_data;
         }
-        
+
         // everything OK
-        pointer_to_data->good_config = true;        
-        
+        pointer_to_data->good_config = true;
+
         return pointer_to_data;
-        
+
     }
-    
+
     /*
      * Prints usage
      */
     void PrintUsage(char* command)
     {
-        
+
         std::cout << "USAGE:\n" << command << " input_file [--out:file] [--hs-in:file] [--hs-out:file] [--rand-seed:number] [--res:number] [--device-info] [--verbose]\n\n";
         std::cout << "PARAMETERS:\n";
         std::cout << "input_file           path to input data file (required)\n";
+        std::cout << "--tc                 use the statistical index Tc as index\n";
         std::cout << "--zi                 use ZI = 2*M*I - g/ sqrt(2*g) as index  (Default)\n";
         std::cout << "--si                 use the strength index SI = 2*M*I/g as index\n";
         std::cout << "--si2                use the strength index SI2 = I/Imax as index\n";
@@ -327,9 +331,9 @@ namespace dci
         std::cout << "--tune               turn on function tuning\n";
         std::cout << "--profile            turn on CUDA profiling\n";
         std::cout << "\n";
-        
+
     }
-    
+
     /*
      * Prints execution configuration parameters
      */
@@ -365,4 +369,3 @@ namespace dci
 }
 
 #endif /* COMMAND_LINE_H */
-

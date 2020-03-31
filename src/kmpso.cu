@@ -150,7 +150,7 @@ int main(int argc, const char * argv[]) {
   pi = acos( -1 ); // for rastrigin function
   if (argc < 10)
   { // We expect 5 arguments: the program name, the source path and the destination path
-    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results datafile" << endl;
+    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results inputfile outputfile" << endl;
     return 1;
   }
   else
@@ -181,7 +181,6 @@ int main(int argc, const char * argv[]) {
   fm= (double*) malloc(K*sizeof(double));
   best=(bool*) malloc(K*sizeof(bool));
 
-
   cudaMalloc((void **)&d_X, sizeof(double*)*S*D);
   cudaMalloc((void **)&d_V, sizeof(double*)*S*D);
   cudaMalloc((void **)&d_P, sizeof(double*)*S*D);
@@ -205,6 +204,12 @@ int main(int argc, const char * argv[]) {
   string output_file = argv[10];
   configuration.rand_seed = 123456;
   //configuration.hs_count=10000;
+  string chosen_index = argv[11];
+  if (chosen_index.compare("tc"))
+    configuration.tc_index = true;
+  else if (chosen_index.compare("zi"))
+    configuration.zi_index = true;
+  //configuration.zi_index = false;
 
   //configuration.hs_input_file_name = argv[9];
   //configuration.hs_output_file_name = "tesths.txt";
@@ -213,7 +218,6 @@ int main(int argc, const char * argv[]) {
 
   // initialize application
   app->Init();
-
 
   fitness=0;
   w = 0.73; // defined in thesis passaro
@@ -242,14 +246,11 @@ int main(int argc, const char * argv[]) {
         {
           X[s*D+d] = alea( 0, xmax );
         }
-        else X[s*D+d] = alea(xmin,0);
-
-
+        else
+          X[s*D+d] = alea(xmin,0);
         V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
         P[s*D+d]=X[s*D+d];
-
       }
-
     }
     else if(b==1)
     {
@@ -277,12 +278,8 @@ int main(int argc, const char * argv[]) {
         X[s*D+d] = alea( xmin, xmax );
         V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
         P[s*D+d]=X[s*D+d];
-
       }
-
     }
-
-
   }
   cudaMemcpy(d_X, X, S*D*sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(d_V, V, S*D*sizeof(double), cudaMemcpyHostToDevice);
@@ -377,7 +374,6 @@ int main(int argc, const char * argv[]) {
   cudaFree(d_sigma);
   delete app;
 
-
   return 0;
 }
 
@@ -457,7 +453,6 @@ void k_means()
     }
     best[k]=false;
   }
-
 
   do
   {
