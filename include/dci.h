@@ -586,7 +586,7 @@ namespace dci
         HANDLE_ERROR( cudaMalloc( (void**)&dev_entropies, CB * sizeof(float) ) );
         HANDLE_ERROR( cudaMalloc( (void**)&dev_output, CB * sizeof(float) ) );
         HANDLE_ERROR( cudaMalloc( (void**)&dev_count, sizeof(unsigned int) ) );
-        //LAURA
+
         HANDLE_ERROR( cudaMalloc( (void**)&dev_cardinalities, NA * sizeof(unsigned int) ) );
         HANDLE_ERROR( cudaMalloc( (void**)&dev_agent_pool, agent_pool_size_bytes ) );
 
@@ -599,16 +599,14 @@ namespace dci
         callKernel<false,false,false,false,true>(NA, agent_pool, cluster_sizes, system_entropies);
         tuneFunction("Agent entropies", clock() - prev); prev = clock();
 
-        //LAURA
         HANDLE_ERROR( cudaMemcpy( frequencies, dev_frequencies, CB * HB * sizeof(unsigned int), cudaMemcpyDeviceToHost ) );
         HANDLE_ERROR( cudaMemcpy( histogram, dev_histogram, CB * HB * sample_size_bytes, cudaMemcpyDeviceToHost ) );
 
-
-        //inizializzazione cardinalit�
+        //inizializzazione cardinalities
         for (unsigned int a = 0; a != NA; ++a)
         cardinalities[a]=0;
 
-        //calcolo cardinalit�
+        //calcolo cardinalities
         for (unsigned int a = 0; a != NA; ++a)
         {
           unsigned int block_idx = a / conf->num_threads;
@@ -621,87 +619,85 @@ namespace dci
             if (frequencies[tmp_idx])
             {
               p += frequencies[tmp_idx];
-              //card[a].push_back(pair<unsigned int, register_t*>(p, histogram + tmp_idx * S));
               cardinalities[a]++;
-
             }
             tmp_idx += conf->num_threads;
           }
         }
 
-        //LAURA
         verbose_cout<<"Cardinalities:\n";
         for (unsigned int a = 0; a != NA; ++a)
-        //verbose_cout<<card[a].size()<<"\n";
         verbose_cout<<cardinalities[a]<<"\n";
 
+        if (conf->tc_index == true) {
 
-        //        // check if homogeneous system stats have to be loaded from file or generated
-        //        if (conf->hs_input_file_name != "")
-        //        {
-        //            verbose_cout << "Loading homogeneous system stats from file: " << conf->hs_input_file_name << '\n';
-        //            dci::FileUtils::LoadSystemStats(conf->hs_input_file_name, NA, hsystem_stats);
-        //        }
-        //        else // generate it
-        //        {
-        //
-        //            // copy system entropy data to host
-        //            HANDLE_ERROR( cudaMemcpy( system_entropies, dev_system_entropies, N * sizeof(float), cudaMemcpyDeviceToHost ) );
-        //            HANDLE_ERROR( cudaMemcpy( frequencies, dev_frequencies, CB * HB * sizeof(unsigned int), cudaMemcpyDeviceToHost ) );
-        //            HANDLE_ERROR( cudaMemcpy( histogram, dev_histogram, CB * HB * sample_size_bytes, cudaMemcpyDeviceToHost ) );
-        //
-        //            // allocate memory for homogeneous system
-        //            hsystem_data = (register_t*)malloc(system_size_bytes);
-        //
-        //            if (conf->hs_data_input_file_name != "")
-        //                dci::FileUtils::LoadRawSystemData(conf->hs_data_input_file_name, hsystem_data, N, M, S);
-        //            else
-        //            {
-        //                verbose_cout << "Generating homogeneous system from uSystem stats with seed = " << conf->rand_seed << '\n';
-        //                generateHomogeneousSystem();
-        //                tuneFunction("HSystem generation", clock() - prev); prev = clock();
-        //            }
-        //
-        //            // save h. system to file if specified
-        //            if (conf->hs_data_output_file_name != "")
-        //                dci::FileUtils::SaveSystemData(conf->hs_data_output_file_name, hsystem_data, N, M, S);
-        //
-        //            verbose_cout << "Computing homogeneous system statistics\n";
-        //
-        //            // copy h. system data to device
-        //            HANDLE_ERROR( cudaMemcpy( dev_system, hsystem_data, system_size_bytes, cudaMemcpyHostToDevice ) );
-        //
-        //            free(hsystem_data);
+        // check if homogeneous system stats have to be loaded from file or generated
+        if (conf->hs_input_file_name != "")
+        {
+            verbose_cout << "Loading homogeneous system stats from file: " << conf->hs_input_file_name << '\n';
+            dci::FileUtils::LoadSystemStats(conf->hs_input_file_name, NA, hsystem_stats);
+        }
+        else // generate it
+        {
 
-        //            // compute single agent entropies
-        //            callKernel<false, true>(NA, agent_pool, cluster_sizes, system_entropies);
-        //            tuneFunction("Hsystem entropies", clock() - prev); prev = clock();
-        //
-        //            // compute h. system statistics
-        //            if (conf->hs_count == 0) computeHomogeneousSystemStatistics<true>();
-        //            else computeHomogeneousSystemStatistics<false>();
-        //
-        //            // copy system data back to device
-        //            HANDLE_ERROR( cudaMemcpy( dev_system, system_data, system_size_bytes, cudaMemcpyHostToDevice ) );
-        //            HANDLE_ERROR( cudaMemcpy( dev_system_entropies, system_entropies, N * sizeof(float), cudaMemcpyHostToDevice ) );
+            // copy system entropy data to host
+            HANDLE_ERROR( cudaMemcpy( system_entropies, dev_system_entropies, N * sizeof(float), cudaMemcpyDeviceToHost ) );
+            HANDLE_ERROR( cudaMemcpy( frequencies, dev_frequencies, CB * HB * sizeof(unsigned int), cudaMemcpyDeviceToHost ) );
+            HANDLE_ERROR( cudaMemcpy( histogram, dev_histogram, CB * HB * sample_size_bytes, cudaMemcpyDeviceToHost ) );
 
-        //        }
-        //
-        //        // free unused memory
-        //        free(histogram);
-        //        free(frequencies);
+            // allocate memory for homogeneous system
+            hsystem_data = (register_t*)malloc(system_size_bytes);
 
-        //        // check if homogeneous system has to be exported
-        //        if (conf->hs_output_file_name != "")
-        //        {
-        //            ofstream hout(conf->hs_output_file_name);
-        //            printSystemStatsToStream(hout, hsystem_stats);
-        //            verbose_cout << "Exported homogeneous system stats to file: " << conf->hs_output_file_name << '\n';
-        //        }
-        //
-        //        // copy h. system data to device
-        //        HANDLE_ERROR( cudaMemcpy( dev_hsystem_stats, hsystem_stats, 2 * NA * sizeof(float), cudaMemcpyHostToDevice ) );
-        //        //free(system_data);
+            if (conf->hs_data_input_file_name != "")
+                dci::FileUtils::LoadRawSystemData(conf->hs_data_input_file_name, hsystem_data, N, M, S);
+            else
+            {
+                verbose_cout << "Generating homogeneous system from uSystem stats with seed = " << conf->rand_seed << '\n';
+                generateHomogeneousSystem();
+                tuneFunction("HSystem generation", clock() - prev); prev = clock();
+            }
+
+            // save h. system to file if specified
+            if (conf->hs_data_output_file_name != "")
+                dci::FileUtils::SaveSystemData(conf->hs_data_output_file_name, hsystem_data, N, M, S);
+
+            verbose_cout << "Computing homogeneous system statistics\n";
+
+            // copy h. system data to device
+            HANDLE_ERROR( cudaMemcpy( dev_system, hsystem_data, system_size_bytes, cudaMemcpyHostToDevice ) );
+
+            free(hsystem_data);
+
+            // compute single agent entropies
+            callKernel<false,false,false,false,true>(NA, agent_pool, cluster_sizes, system_entropies);
+            tuneFunction("Hsystem entropies", clock() - prev); prev = clock();
+
+            // compute h. system statistics
+            if (conf->hs_count == 0) computeHomogeneousSystemStatistics<true>();
+            else computeHomogeneousSystemStatistics<false>();
+
+            // copy system data back to device
+            HANDLE_ERROR( cudaMemcpy( dev_system, system_data, system_size_bytes, cudaMemcpyHostToDevice ) );
+            HANDLE_ERROR( cudaMemcpy( dev_system_entropies, system_entropies, N * sizeof(float), cudaMemcpyHostToDevice ) );
+
+        }
+
+        // free unused memory
+        free(histogram);
+        free(frequencies);
+
+        // check if homogeneous system has to be exported
+        if (conf->hs_output_file_name != "")
+        {
+            ofstream hout(conf->hs_output_file_name);
+            printSystemStatsToStream(hout, hsystem_stats);
+            verbose_cout << "Exported homogeneous system stats to file: " << conf->hs_output_file_name << '\n';
+        }
+
+        // copy h. system data to device
+        HANDLE_ERROR( cudaMemcpy( dev_hsystem_stats, hsystem_stats, 2 * NA * sizeof(float), cudaMemcpyHostToDevice ) );
+
+      } // end if Tc
 
         tuneFunction("Application init", clock() - start);
 
@@ -821,151 +817,146 @@ namespace dci
         if (!conf->silent) (cout << (perc > 100.0f ? 100 : (int)perc) << "% (" << freq << " clusters/s), " << eta << " s left                      \r").flush();
       }
 
-      //    /*
-      //     * Computes h. system statistics
-      //     */
-      //    template<bool IsFullComputation> int Application::computeHomogeneousSystemStatistics()
-      //    {
-      //
-      //        not_silent_cout << "Computing homogeneous system statistics, please wait...\n";
-      //        unsigned long long n_clusters = 1;
-      //        // case r=N: compute H(U)
-      //        register_t* clusters = (register_t*)malloc(CB * sample_size_bytes);
-      //        unsigned int* cluster_sizes = (unsigned int*)malloc(CB * sizeof(unsigned int));
-      //        register_t* cur_cluster = clusters;
-      //        float* output = (float*)malloc(CB * sizeof(float));
-      //        bool has_next;
-      //        vector<dci::StatUtils::RunningStat> rs(NA);
-      //        unsigned long long to_subtract;
-      //        unsigned long long cc = 0;
-      //        unsigned long long total_clusters = 0;
-      //        mt19937 rng(conf->rand_seed);
-      //
-      //        clock_t start = clock();
-      //
-      //        // store total number of clusters according to computation type
-      //        if (!IsFullComputation) total_clusters = conf->hs_count * (NA - 2);
-      //
-      //        // store only one cluster
-      //        dci::RegisterUtils::SetAllBits<1>(clusters, N, S);
-      //        cluster_sizes[0] = NA; // just one NA-sized cluster
-      //        unsigned int old_HB = HB, new_HB;
-      //
-      //        // invoke kernel for whole system
-      //        new_HB = callKernel<false, false>(1, clusters, cluster_sizes, output);
-      //
-      //        // reallocate histogram memory on device
-      //        reallocateHistogramMemory(new_HB);
-      //
-      //        verbose_cout << "hSystem's jointEntropy H(S,U-S) = H(U) = " << output[0] << endl;
-      //
-      //        // this variable holds number of clusters in batch
-      //        unsigned int C = 0;
-      //
-      //        // cycle all cluster sizes up to N/2, or up to N if a mutual information mask is specified
-      //        auto limit = has_mi_mask ? (NA-1) : (NA/2);
-      //        for (int r = 1; r <= limit; r++) // cluster size
-      //        {
-      //
-      //            // initialize r-sized cluster mask generator
-      //            dci::ClusterUtils::initializeClusterMaskGenerator(NA, r, S, agent_pool, N, mutual_information_mask);
-      //
-      //            // get number of clusters to use according to percentage
-      //            if (!IsFullComputation)
-      //                cc = 0;
-      //
-      //            // cycle all r-sized clusters
-      //            while (
-      //                (IsFullComputation && dci::ClusterUtils::getNextClusterMask(cur_cluster, has_next)) ||
-      //                (!IsFullComputation && (cc++) < conf->hs_count))
-      //            {
-      //
-      //                // get random cluster if necessary
-      //                if (!IsFullComputation) dci::ClusterUtils::getNextRandomClusterMask(cur_cluster, rng);
-      //
-      //                // get complementary cluster and store it in the next memory block
-      //                dci::ClusterUtils::getComplementaryClusterMask(cur_cluster + S, cur_cluster, N);
-      //
-      //                // 2 clusters (original and complementary)
-      //                cluster_sizes[C++] = r;
-      //                cluster_sizes[C++] = dci::RegisterUtils::GetNumberOf<1>(cur_cluster + S, N) ? (NA - r) : 0;
-      //                // if (r==6)
-      //                // {
-      //                //     printCluster(cur_cluster);
-      //                //     printCluster(cur_cluster + S);
-      //                // }
-      //
-      //                // if we have stored enough clusters for a batch, or if we have reached the end of current group
-      //                if (C == CB || (IsFullComputation && r == limit && !has_next) || (!IsFullComputation && r == limit && cc == conf->hs_count))
-      //                {
-      //
-      //                    // invoke kernel for current batch
-      //                    callKernel<false, false>(C, clusters, cluster_sizes, output);
-      //
-      //                    // reset extra cluster count
-      //                    to_subtract = 0;
-      //
-      //                    // elaborate results
-      //                    for (unsigned int c = 0; c != C / 2; ++c)
-      //                    {
-      //                        if (cluster_sizes[2*c] != 1) rs[cluster_sizes[2*c]].Push(output[2*c]); // 1-sized clusters are not relevant
-      //                        if (!has_mi_mask && cluster_sizes[2*c+1] != NA / 2) rs[cluster_sizes[2*c+1]].Push(output[2*c+1]); else to_subtract++; // in case of an even number of variables, avoid counting N/2-sized clusters twice
-      //
-      //                        /*if (n_clusters == 1)
-      //                        {
-      //                            debugCluster(clusters + 2*c * S, dev_histogram + 2*c*HB*S, dev_frequencies + 2*c*HB);
-      //                        }
-      //                        if (n_clusters == 1)
-      //                        {
-      //                            debugCluster(clusters + (2*c+1) * S, dev_histogram + (2*c+1) * S * HB, dev_frequencies + (2*c+1)*HB);
-      //                        }*/
-      //
-      //                    }
-      //
-      //                    // reset current cluster pointer
-      //                    cur_cluster = clusters;
-      //
-      //                    // update number of processed clusters
-      //                    n_clusters += (C - to_subtract);
-      //
-      //                    // print progress
-      //                    if (IsFullComputation) printProgress(start, n_clusters);
-      //                    else printProgress(start, n_clusters, total_clusters);
-      //
-      //                    // reset number of clusters
-      //                    C = 0;
-      //
-      //                }
-      //                else
-      //                    cur_cluster += S * 2; // move two blocks forward
-      //
-      //            }
-      //
-      //        }
-      //
-      //        // cycle all cluster sizes from 2 to N - 1
-      //        for (int r = 2; r <= NA - 1; r++) // cluster size
-      //        {
-      //
-      //            hsystem_stats[2*r-2] = rs[r].Mean();
-      //            verbose_cout << "\n<Ch> for |S| = " << r << " is " << rs[r].Mean() << endl;
-      //            hsystem_stats[2*r-1] = rs[r].StandardDeviation();
-      //            verbose_cout << "\nsigma(Ch) for |S| = " << r << " is " << rs[r].StandardDeviation() << endl;
-      //
-      //        }
-      //
-      //        free(clusters);
-      //        free(cluster_sizes);
-      //        free(output);
-      //
-      //        not_silent_cout << endl;
-      //
-      //        // reallocate histogram memory on device
-      //        reallocateHistogramMemory(old_HB);
-      //
-      //        return 0;
-      //
-      //    }
+      /*
+       * Computes h. system statistics
+       */
+      template<bool IsFullComputation> int Application::computeHomogeneousSystemStatistics()
+      {
+
+          not_silent_cout << "Computing homogeneous system statistics, please wait...\n";
+          unsigned long long n_clusters = 1;
+          // case r=N: compute H(U)
+          register_t* clusters = (register_t*)malloc(CB * sample_size_bytes);
+          unsigned int* cluster_sizes = (unsigned int*)malloc(CB * sizeof(unsigned int));
+          register_t* cur_cluster = clusters;
+          float* output = (float*)malloc(CB * sizeof(float));
+          bool has_next;
+          vector<dci::StatUtils::RunningStat> rs(NA);
+          unsigned long long to_subtract;
+          unsigned long long cc = 0;
+          unsigned long long total_clusters = 0;
+          mt19937 rng(conf->rand_seed);
+
+          clock_t start = clock();
+
+          // store total number of clusters according to computation type
+          if (!IsFullComputation) total_clusters = conf->hs_count * (NA - 2);
+
+          // store only one cluster
+          dci::RegisterUtils::SetAllBits<1>(clusters, N, S);
+          cluster_sizes[0] = NA; // just one NA-sized cluster
+          unsigned int old_HB = HB, new_HB;
+
+          // invoke kernel for whole system
+          new_HB = callKernel<false,false,false,false,false>(1, clusters, cluster_sizes, output);
+
+          // reallocate histogram memory on device
+          reallocateHistogramMemory(new_HB);
+
+          verbose_cout << "hSystem's jointEntropy H(S,U-S) = H(U) = " << output[0] << endl;
+
+          // this variable holds number of clusters in batch
+          unsigned int C = 0;
+
+          // cycle all cluster sizes up to N/2
+          for (int r = 1; r <= NA / 2; r++) // cluster size
+          {
+
+              // initialize r-sized cluster mask generator
+              dci::ClusterUtils::initializeClusterMaskGenerator(NA, r, S, agent_pool, N, mutual_information_mask);
+
+              // get number of clusters to use according to percentage
+              if (!IsFullComputation)
+                  cc = 0;
+
+              // cycle all r-sized clusters
+              while (
+                  (IsFullComputation && dci::ClusterUtils::getNextClusterMask(cur_cluster, has_next)) ||
+                  (!IsFullComputation && (cc++) < conf->hs_count))
+              {
+
+                  // get random cluster if necessary
+                  if (!IsFullComputation) dci::ClusterUtils::getNextRandomClusterMask(cur_cluster, rng);
+
+                  // get complementary cluster and store it in the next memory block
+                  dci::ClusterUtils::getComplementaryClusterMask(cur_cluster + S, cur_cluster, N);
+
+                  // 2 clusters (original and complementary)
+                  cluster_sizes[C++] = r;
+                  cluster_sizes[C++] = NA - r;
+
+                  // if we have stored enough clusters for a batch, or if we have reached the end of current group
+                  if (C == CB || (IsFullComputation && r == NA / 2 && !has_next) || (!IsFullComputation && r == NA / 2 && cc == conf->hs_count))
+                  {
+
+                      // invoke kernel for current batch
+                      callKernel<false,false,false,false,false>(C, clusters, cluster_sizes, output);
+
+                      // reset extra cluster count
+                      to_subtract = 0;
+
+                      // elaborate results
+                      for (unsigned int c = 0; c != C / 2; ++c)
+                      {
+                          if (cluster_sizes[2*c] != 1) rs[cluster_sizes[2*c]].Push(output[2*c]); // 1-sized clusters are not relevant
+                          if (cluster_sizes[2*c+1] != NA / 2) rs[cluster_sizes[2*c+1]].Push(output[2*c+1]); else to_subtract++; // in case of an even number of variables, avoid counting N/2-sized clusters twice
+
+                          /*if (n_clusters == 1)
+                          {
+                              debugCluster(clusters + 2*c * S, dev_histogram + 2*c*HB*S, dev_frequencies + 2*c*HB);
+                          }
+                          if (n_clusters == 1)
+                          {
+                              debugCluster(clusters + (2*c+1) * S, dev_histogram + (2*c+1) * S * HB, dev_frequencies + (2*c+1)*HB);
+                          }*/
+
+                      }
+
+                      // reset current cluster pointer
+                      cur_cluster = clusters;
+
+                      // update number of processed clusters
+                      n_clusters += (C - to_subtract);
+
+                      // print progress
+                      if (IsFullComputation) printProgress(start, n_clusters);
+                      else printProgress(start, n_clusters, total_clusters);
+
+                      // reset number of clusters
+                      C = 0;
+
+                  }
+                  else
+                      cur_cluster += S * 2; // move two blocks forward
+
+              }
+
+          }
+
+          // cycle all cluster sizes from 2 to N - 1
+          for (int r = 2; r <= NA - 1; r++) // cluster size
+          {
+
+              hsystem_stats[2*r-2] = rs[r].Mean();
+              verbose_cout << "\n<Ch> for |S| = " << r << " is " << rs[r].Mean() << endl;
+              hsystem_stats[2*r-1] = rs[r].StandardDeviation();
+              verbose_cout << "\nsigma(Ch) for |S| = " << r << " is " << rs[r].StandardDeviation() << endl;
+
+          }
+
+          free(clusters);
+          free(cluster_sizes);
+          free(output);
+
+          not_silent_cout << endl;
+
+          // reallocate histogram memory on device
+          reallocateHistogramMemory(old_HB);
+
+          return 0;
+
+      }
+
 
       /*
       * Inserts given cluster in result stack if conditions are met
@@ -2153,65 +2144,61 @@ void Application::printSystemStatsToStream(ostream& out, const float* stats)
 }
 
 /*
-* Generates a homogeneous system according to the statistical distribution
-* of the starting system, using given random seed
-*/
-//    void Application::generateHomogeneousSystem()
-//    {
-//
-//        vector<vector<pair<unsigned int, register_t*> > > values(NA); // packed histogram
-//
-//        // fill packed histogram
-//        for (unsigned int a = 0; a != NA; ++a)
-//        {
-//            unsigned int block_idx = a / conf->num_threads;
-//            unsigned int thread_idx = a % conf->num_threads;
-//            unsigned int tmp_idx = block_idx * conf->num_threads * HB + thread_idx;
-//            unsigned int p = 0; // accumulated value
-//            for (unsigned int h = 0; p!= M && h != HB; ++h)
-//            {
-//
-//                if (frequencies[tmp_idx])
-//                {
-//                    p += frequencies[tmp_idx];
-//                    values[a].push_back(pair<unsigned int, register_t*>(p, histogram + tmp_idx * S));
-//                }
-//                tmp_idx += conf->num_threads;
-//            }
-//        }
-//
-//        mt19937 rng(conf->rand_seed); // set random seed
-//        uniform_int_distribution<unsigned int> gen(0, M - 1); // setup random number generator
-//
-//        // for each sample
-//        for (unsigned int row = 0; row != M; ++row)
-//        {
-//
-//            register_t* sample = hsystem_data + row * S;
-//
-//            // reset sample
-//            dci::RegisterUtils::SetAllBits<0>(sample, N, S);
-//
-//            // for each agent
-//            for (unsigned int a = 0; a != NA; ++a)
-//            {
-//
-//                // get random number between 0 and M - 1
-//                unsigned int val = gen(rng);
-//
-//                // cycle all histogram values
-//                for (auto pp : values[a])
-//                    if (val < pp.first)
-//                    {
-//                        dci::RegisterUtils::reg_or(sample, pp.second, S);
-//                        break;
-//                    }
-//
-//            }
-//
-//        }
-//
-//    }
+ * Generates a homogeneous system according to the statistical distribution
+ * of the starting system, using given random seed
+ */
+void Application::generateHomogeneousSystem()
+{
+
+    vector<vector<pair<unsigned int, register_t*> > > values(NA); // packed histogram
+
+    // fill packed histogram
+    for (unsigned int a = 0; a != NA; ++a)
+    {
+        unsigned int block_idx = a / conf->num_threads;
+        unsigned int thread_idx = a % conf->num_threads;
+        unsigned int tmp_idx = block_idx * conf->num_threads * HB + thread_idx;
+        unsigned int p = 0; // accumulated value
+        for (unsigned int h = 0; p!= M && h != HB; ++h)
+        {
+
+            if (frequencies[tmp_idx])
+            {
+                p += frequencies[tmp_idx];
+                values[a].push_back(pair<unsigned int, register_t*>(p, histogram + tmp_idx * S));
+            }
+            tmp_idx += conf->num_threads;
+        }
+    }
+
+    mt19937 rng(conf->rand_seed); // set random seed
+    uniform_int_distribution<unsigned int> gen(0, M - 1); // setup random number generator
+
+    // for each sample
+    for (unsigned int row = 0; row != M; ++row)
+    {
+        register_t* sample = hsystem_data + row * S;
+
+        // reset sample
+        dci::RegisterUtils::SetAllBits<0>(sample, N, S);
+
+        // for each agent
+        for (unsigned int a = 0; a != NA; ++a)
+        {
+
+            // get random number between 0 and M - 1
+            unsigned int val = gen(rng);
+
+            // cycle all histogram values
+            for (auto pp : values[a])
+                if (val < pp.first)
+                {
+                    dci::RegisterUtils::reg_or(sample, pp.second, S);
+                    break;
+                }
+        }
+    }
+}
 
 /*
 *

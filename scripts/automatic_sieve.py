@@ -143,10 +143,10 @@ while (zI_index >=3 and num_var>2):
 	print(nomi_variabili)
 
 	if(iterazione==1): #1
-		#rimuovo ultimo elemento: "Tc"
+		#rimuovo ultimo elemento: "zI"
 		nomi_variabili=nomi_variabili[:-1]
 	else:
-		#rimuovo ultimi 2 elementi: "Tc", "comp"
+		#rimuovo ultimi 2 elementi: "zI", "comp"
 		nomi_variabili=nomi_variabili[:-2]
 
 	print(nomi_variabili)
@@ -159,18 +159,18 @@ while (zI_index >=3 and num_var>2):
 	gruppo=re.split(' ',gruppo)
 	print(gruppo)
 	if(iterazione==1): #1
-		#rimuovo ultimo elemento: "Tc"
+		#rimuovo ultimo elemento: "zI"
 		zI_index=float(gruppo[-1])
 		gruppo=gruppo[:-1]
 	else:
-		#rimuovo ultimi 2 elementi: "Tc", "comp"
+		#rimuovo ultimi 2 elementi: "zI", "comp"
 		zI_index=float(gruppo[-2])
 		gruppo=gruppo[:-2]
 	print(gruppo)
 	gruppo=' '.join(gruppo)
 	print(gruppo)
 
-	print("\nTc: "+str(zI_index)+"\n")
+	print("\nzI: "+str(zI_index)+"\n")
 
 	#GENERAZIONE NUOVE VARIABILI
 
