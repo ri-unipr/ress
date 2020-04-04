@@ -205,14 +205,13 @@ int main(int argc, const char * argv[]) {
   configuration.rand_seed = 123456;
   //configuration.hs_count=10000;
   string chosen_index = argv[11];
-  if (chosen_index.compare("tc"))
-    configuration.tc_index = true;
-  else if (chosen_index.compare("zi"))
-    configuration.zi_index = true;
-  //configuration.zi_index = false;
-
-  //configuration.hs_input_file_name = argv[9];
+  if (chosen_index.compare("tc") == 0)
+  configuration.tc_index = true;
+  else if (chosen_index.compare("zi") == 0)
+  configuration.zi_index = true;
+  //configuration.hs_input_file_name = "";
   //configuration.hs_output_file_name = "tesths.txt";
+
   // create application object
   app = new dci::Application(configuration);
 
@@ -247,7 +246,7 @@ int main(int argc, const char * argv[]) {
           X[s*D+d] = alea( 0, xmax );
         }
         else
-          X[s*D+d] = alea(xmin,0);
+        X[s*D+d] = alea(xmin,0);
         V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
         P[s*D+d]=X[s*D+d];
       }
