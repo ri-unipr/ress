@@ -43,6 +43,9 @@ int D; // Search space dimension
 int S; // Swarm size
 int K; // Number of seeds
 int N; // number of results to keep
+// SC aggiunta seme e hseme
+unsigned int seme; // random seed
+int hseme; // random seed for h. system computation
 double *v; // vector for distance
 double *V;
 double *X;
@@ -57,7 +60,7 @@ double *bp;
 double *fm;
 bool *best;
 vector < vector<unsigned int> > group(S_max, vector<unsigned int> (D_max));
-
+ 
 int a;
 double *d_X;
 double *d_V;
@@ -88,7 +91,8 @@ int b;
 __global__ void setup_kernel ( curandState * state, unsigned long seed )
 {
   int id = blockIdx.x * blockDim.x + threadIdx.x;
-  curand_init ( seed, id, 0, &state[id] );
+  curand_init ( seed+id, id, 0, &state[id] );
+// SC    curand_init ( seed, id, 0, &state[id] );
 }
 
 __device__ float generate( curandState* globalState, int ind )
@@ -148,9 +152,11 @@ int main(int argc, const char * argv[]) {
 
 
   pi = acos( -1 ); // for rastrigin function
-  if (argc < 10)
+  if (argc < 13)
+// SC if (argc < 10)      I parametri obbligatori sono 12 + il nome del programma
   { // We expect 5 arguments: the program name, the source path and the destination path
-    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results inputfile outputfile" << endl;
+    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results seed inputfile outputfile zi/tc [h_seed]" << endl;
+// SC    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results inputfile outputfile" << endl;
     return 1;
   }
   else
@@ -163,7 +169,11 @@ int main(int argc, const char * argv[]) {
     c1=atoi(argv[6]);
     interv=atoi(argv[7]);
     N=atoi(argv[8]);
-  }
+    seme = (unsigned int) atoi(argv[9]);
+    if (argc==14) {hseme = (int) atoi(argv[12]);}
+    else {hseme= (int)seme;}
+// SC aggiunto seme e hseme
+}
 
   results.resize(N);
   g.resize(N);
@@ -200,17 +210,20 @@ int main(int argc, const char * argv[]) {
   dci::RunInfo configuration = dci::RunInfo();
 
   // set configuration parameters
-  configuration.input_file_name = argv[9];
-  string output_file = argv[10];
-  configuration.rand_seed = 123456;
-  //configuration.hs_count=10000;
-  string chosen_index = argv[11];
+  configuration.input_file_name = argv[10];
+  string output_file = argv[11];
+// SC  configuration.input_file_name = argv[9];
+// SC  string output_file = argv[10];
+       configuration.rand_seed = hseme;
+// SC  configuration.rand_seed = 123456;
+//configuration.hs_count=10000;
+  string chosen_index = argv[12];
   if (chosen_index.compare("tc") == 0)
   configuration.tc_index = true;
   else if (chosen_index.compare("zi") == 0)
   configuration.zi_index = true;
   //configuration.hs_input_file_name = "";
-  //configuration.hs_output_file_name = "tesths.txt";
+  configuration.hs_output_file_name = "";
 
   // create application object
   app = new dci::Application(configuration);
@@ -225,8 +238,10 @@ int main(int argc, const char * argv[]) {
   xmin = -x; xmax = x;
 
   //-----------------------INITIALIZATION
-  setup_kernel <<< NB,TPB >>> ( devStates,unsigned(time(NULL)) );
-  srand( static_cast<unsigned int>(time(NULL)));
+  setup_kernel <<< NB,TPB >>> ( devStates, (unsigned long) seme );
+// SC setup_kernel <<< NB,TPB >>> ( devStates, static_cast<unsigned int>(time(NULL)));   
+  srand(seme);
+// SC  srand( static_cast<unsigned int>(time(NULL)));
 
   for ( s = 0; s < S; s++ ) // create S particles
   {
