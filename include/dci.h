@@ -30,7 +30,8 @@
 #include "cuda_utils.h"
 #include "stat_utils.h"
 #include "cluster_descriptor.h"
-#include "dci_kernels.hu"
+#include "cluster_utils.h"
+#include "dci_kernels.h"
 #include <cuda.h>
 #include <cuda_profiler_api.h>
 

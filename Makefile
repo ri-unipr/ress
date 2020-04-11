@@ -11,6 +11,18 @@ DCITESTFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=
 QUERYFLAGS = -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -I $(CUDADIR) -I $(IDIR)
 KMPSOFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -O2 -I $(IDIR)
 
+_CLUSTDESCRDEPS = cluster_descriptor.h
+CLUSTDESCRDEPS = $(patsubst %,$(IDIR)/%,$(_CLUSTDESCRDEPS))
+_CLUSTDESCRSRC = cluster_descriptor.cu
+CLUSTDESCRSRC = $(patsubst %,$(SDIR)/%,$(_CLUSTDESCRSRC))
+CLUSTDESCROBJ = cluster_descriptor.o
+
+_CLUSTUTILSDEPS = cluster_utils.h
+CLUSTUTILSDEPS = $(patsubst %,$(IDIR)/%,$(_CLUSTUTILSDEPS))
+_CLUSTUTILSSRC = cluster_utils.cu
+CLUSTUTILSSRC = $(patsubst %,$(SDIR)/%,$(_CLUSTUTILSSRC))
+CLUSTUTILSOBJ = cluster_utils.o
+
 _DCIDEPS = dci.h
 DCIDEPS = $(patsubst %,$(IDIR)/%,$(_DCIDEPS))
 _DCISRC = dci.cu
@@ -31,13 +43,21 @@ _KMPSOSRC = kmpso.cu
 KMPSOSRC = $(patsubst %,$(SDIR)/%,$(_KMPSOSRC))
 KMPSOOBJ = kmpso.o
 
+$(CLUSTDESCROBJ): $(CLUSTDESCRSRC) $(CLUSTDESCRDEPS)
+	$(CC) -c -o $@ $< $(DCIFLAGS)
+
+$(CLUSTUTILSOBJ): $(CLUSTUTILSSRC) $(CLUSTUTILSDEPS)
+	$(CC) -c -o $@ $< $(DCIFLAGS)
+
 $(DCIOBJ): $(DCISRC) $(DCIDEPS)
 	$(CC) -c -o $@ $< $(DCIFLAGS)
 
-dci: $(DCIOBJ)
+dci: $(CLUSTDESCROBJ) $(CLUSTUTILSOBJ) $(DCIOBJ)
 	$(CC) -o $@ $^ $(DCIFLAGS)
 	mv $@ $(BDIR)
 	rm $(DCIOBJ)
+	rm $(CLUSTDESCROBJ)
+	rm $(CLUSTUTILSOBJ)
 
 $(DCITESTOBJ): $(DCITESTSRC) $(DCIDEPS)
 	$(CC) -c -o $@ $< $(DCITESTFLAGS)
@@ -58,7 +78,7 @@ query: $(QUERYOBJ)
 $(KMPSOOBJ): $(KMPSOSRC) $(DCIDEPS)
 	$(CC) -c -o $@ $< $(KMPSOFLAGS)
 
-kmpso: $(KMPSOOBJ)
+kmpso: $(CLUSTDESCROBJ) $(CLUSTUTILSOBJ) $(KMPSOOBJ)
 	$(CC) -o $@ $^ $(KMPSOFLAGS)
 	mv $@ $(BDIR)
 	rm $(KMPSOOBJ)
