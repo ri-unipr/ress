@@ -23,8 +23,6 @@ _CLUSTUTILSSRC = cluster_utils.cu
 CLUSTUTILSSRC = $(patsubst %,$(SDIR)/%,$(_CLUSTUTILSSRC))
 CLUSTUTILSOBJ = cluster_utils.o
 
-_DCIDEPS = dci.h
-DCIDEPS = $(patsubst %,$(IDIR)/%,$(_DCIDEPS))
 _DCISRC = dci.cu
 DCISRC = $(patsubst %,$(SDIR)/%,$(_DCISRC))
 DCIOBJ = dci.o
@@ -49,7 +47,7 @@ $(CLUSTDESCROBJ): $(CLUSTDESCRSRC) $(CLUSTDESCRDEPS)
 $(CLUSTUTILSOBJ): $(CLUSTUTILSSRC) $(CLUSTUTILSDEPS)
 	$(CC) -c -o $@ $< $(DCIFLAGS)
 
-$(DCIOBJ): $(DCISRC) $(DCIDEPS)
+$(DCIOBJ): $(DCISRC)
 	$(CC) -c -o $@ $< $(DCIFLAGS)
 
 dci: $(CLUSTDESCROBJ) $(CLUSTUTILSOBJ) $(DCIOBJ)

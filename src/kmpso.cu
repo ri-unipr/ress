@@ -17,7 +17,7 @@
 #include <limits>
 #include <curand_kernel.h>
 #include <string>
-#include "dci.h"
+#include "application.h"
 
 using  namespace  std;
 
@@ -60,7 +60,7 @@ double *bp;
 double *fm;
 bool *best;
 vector < vector<unsigned int> > group(S_max, vector<unsigned int> (D_max));
- 
+
 int a;
 double *d_X;
 double *d_V;
@@ -239,7 +239,7 @@ int main(int argc, const char * argv[]) {
 
   //-----------------------INITIALIZATION
   setup_kernel <<< NB,TPB >>> ( devStates, (unsigned long) seme );
-// SC setup_kernel <<< NB,TPB >>> ( devStates, static_cast<unsigned int>(time(NULL)));   
+// SC setup_kernel <<< NB,TPB >>> ( devStates, static_cast<unsigned int>(time(NULL)));
   srand(seme);
 // SC  srand( static_cast<unsigned int>(time(NULL)));
 
