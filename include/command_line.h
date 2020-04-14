@@ -105,11 +105,11 @@ namespace dci
     // typedef for struct pointer
     using RunInfo_p = std::unique_ptr<RunInfo>;
 
-    RunInfo_p ProcessCommandLine(int argc, char** argv);
+    RunInfo_p processCommandLine(int argc, char** argv);
 
-    void PrintUsage(char* command);
+    void printUsage(char* command);
 
-    void PrintRunInfo(const RunInfo& configuration);
+    void printRunInfo(const RunInfo& configuration);
 }
 
 #endif /* COMMAND_LINE_H */

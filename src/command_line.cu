@@ -21,7 +21,7 @@ namespace dci
   /*
   * Processes command-line arguments to retrieve execution configuration
   */
-  RunInfo_p ProcessCommandLine(int argc, char** argv)
+  RunInfo_p processCommandLine(int argc, char** argv)
   {
 
     // constructor sets default values
@@ -209,7 +209,7 @@ namespace dci
   /*
   * Prints usage
   */
-  void PrintUsage(char* command)
+  void printUsage(char* command)
   {
 
     std::cout << "USAGE:\n" << command << " input_file [--out:file] [--hs-in:file] [--hs-out:file] [--rand-seed:number] [--res:number] [--device-info] [--verbose]\n\n";
@@ -250,7 +250,7 @@ namespace dci
   /*
   * Prints execution configuration parameters
   */
-  void PrintRunInfo(const RunInfo& configuration)
+  void printRunInfo(const RunInfo& configuration)
   {
     std::cout << "Input file           " << configuration.input_file_name << '\n';
     std::cout << "Output file          " << configuration.output_file_name << '\n';

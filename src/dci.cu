@@ -23,12 +23,12 @@ using namespace std;
 int main(int argc, char** argv) {
 
     // process command line to obtain configuration
-    dci::RunInfo_p configuration = dci::ProcessCommandLine(argc, argv);
+    dci::RunInfo_p configuration = dci::processCommandLine(argc, argv);
 
     if (!configuration->good_config) // bad command line parameters, print error and usage
     {
         cout << "Error: " << configuration->error_message << "\n\n";
-        dci::PrintUsage(argv[0]);
+        dci::printUsage(argv[0]);
         return 1;
     }
 
