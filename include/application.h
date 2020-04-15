@@ -878,8 +878,8 @@ namespace dci
             // elaborate results
             for (unsigned int c = 0; c != C / 2; ++c)
             {
-              if (cluster_sizes[2*c] != 1) rs[cluster_sizes[2*c]].Push(output[2*c]); // 1-sized clusters are not relevant
-              if (cluster_sizes[2*c+1] != NA / 2) rs[cluster_sizes[2*c+1]].Push(output[2*c+1]); else to_subtract++; // in case of an even number of variables, avoid counting N/2-sized clusters twice
+              if (cluster_sizes[2*c] != 1) rs[cluster_sizes[2*c]].push(output[2*c]); // 1-sized clusters are not relevant
+              if (cluster_sizes[2*c+1] != NA / 2) rs[cluster_sizes[2*c+1]].push(output[2*c+1]); else to_subtract++; // in case of an even number of variables, avoid counting N/2-sized clusters twice
 
               /*if (n_clusters == 1)
               {
@@ -913,10 +913,10 @@ namespace dci
   // cycle all cluster sizes from 2 to N - 1
   for (int r = 2; r <= NA - 1; r++) // cluster size
   {
-    hsystem_stats[2*r-2] = rs[r].Mean();
-    verbose_cout << "\n<Ch> for |S| = " << r << " is " << rs[r].Mean() << endl;
-    hsystem_stats[2*r-1] = rs[r].StandardDeviation();
-    verbose_cout << "\nsigma(Ch) for |S| = " << r << " is " << rs[r].StandardDeviation() << endl;
+    hsystem_stats[2*r-2] = rs[r].mean();
+    verbose_cout << "\n<Ch> for |S| = " << r << " is " << rs[r].mean() << endl;
+    hsystem_stats[2*r-1] = rs[r].standardDeviation();
+    verbose_cout << "\nsigma(Ch) for |S| = " << r << " is " << rs[r].standardDeviation() << endl;
   }
 
   free(clusters);
