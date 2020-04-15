@@ -15,9 +15,9 @@
 #include <vector>
 #include <cfloat>
 #include <limits>
-#include <curand_kernel.h>
 #include <string>
 #include "application.h"
+#include "kmpso_kernels.h"
 
 using  namespace  std;
 
@@ -25,27 +25,22 @@ using  namespace  std;
 #define	S_max 10000 // Max swarm size
 #define K_max 3000 //Max number of clusters
 
-// Structures
-
 
 // Sub-programs
-void identify_niches();
-void k_means();
-double alea( double a, double b );
-vector<float> perf(int S, int D); // Fitness evaluation
-void update();
-
+//void identify_niches();
+//void k_means();
+//double alea( double a, double b);
+//vector<float> perf(int S, int D); // Fitness evaluation
+//void update();
 
 // Global variables
-
 double pi; // Useful for some test functions
 int D; // Search space dimension
 int S; // Swarm size
 int K; // Number of seeds
 int N; // number of results to keep
-// SC aggiunta seme e hseme
-unsigned int seme; // random seed
-int hseme; // random seed for h. system computation
+unsigned int rseed; // random seed
+int hseed; // random seed for h. system computation
 double *v; // vector for distance
 double *V;
 double *X;
@@ -60,7 +55,6 @@ double *bp;
 double *fm;
 bool *best;
 vector < vector<unsigned int> > group(S_max, vector<unsigned int> (D_max));
-
 int a;
 double *d_X;
 double *d_V;
@@ -70,9 +64,6 @@ double *d_sigma;
 double *d_bp;
 curandState* devStates;
 int TPB, NB;
-
-
-
 double xmin, xmax; // Intervals defining the search space
 int T;
 vector<float> output1(S);
@@ -85,311 +76,6 @@ vector <double> results;
 vector < vector<unsigned int> > g;
 int r1, r2;
 int b;
-
-
-
-__global__ void setup_kernel ( curandState * state, unsigned long seed )
-{
-  int id = blockIdx.x * blockDim.x + threadIdx.x;
-  curand_init ( seed+id, id, 0, &state[id] );
-// SC    curand_init ( seed, id, 0, &state[id] );
-}
-
-__device__ float generate( curandState* globalState, int ind )
-{
-  curandState localState = globalState[ind];
-  float RANDOM = curand_uniform( &localState );
-  globalState[ind] = localState;
-  return RANDOM;
-}
-
-
-
-__global__ void compute(double* V,double* X,double* P,int* seed,double* bp,double* sigma,int xmin,int xmax,int S,int D, double c,curandState_t *state)
-{
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if(i < S*D)
-  {
-    if(seed[i/D]!=-1) // if belongs to a cluster
-    {
-      V[i] = V[i] +  (generate(state,i)*c) * ( P[i] - X[i] );
-      V[i] = V[i] + (generate(state,i)*c) * ( bp[seed[i/D]*D+(i%D)] - X[i] );
-      V[i] = 0.73*V[i];
-      if(V[i]>2*(sqrt(sigma[seed[i/D]]))) V[i]=2*(sqrt(sigma[seed[i/D]]));
-      if(V[i]<-2*(sqrt(sigma[seed[i/D]]))) V[i]=-2*(sqrt(sigma[seed[i/D]]));
-      X[i] = X[i] + V[i];
-    }
-    else
-    {
-      V[i] = V[i] + (generate(state,i)*c) * ( P[i] - X[i] ); // cognition only
-      V[i] = 0.73*V[i];
-      X[i] = X[i] + V[i];
-    }
-    if ( X[i] < xmin )
-    {
-      X[i] = xmin; V[i] = 0;
-    }
-    if ( X[i] > xmax )
-    {
-      X[i] = xmax; V[i] = 0;
-    }
-  }
-  else return;
-
-
-}
-
-
-
-int main(int argc, const char * argv[]) {
-
-  clock_t tStart = clock();
-  int d; // Current dimension
-  int s; // Rank of the current particle
-  int c1; // intervals for identify niches
-  int interv; // print interval
-
-
-  pi = acos( -1 ); // for rastrigin function
-  if (argc < 13)
-// SC if (argc < 10)      I parametri obbligatori sono 12 + il nome del programma
-  { // We expect 5 arguments: the program name, the source path and the destination path
-    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results seed inputfile outputfile zi/tc [h_seed]" << endl;
-// SC    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results inputfile outputfile" << endl;
-    return 1;
-  }
-  else
-  {
-    D =atoi(argv[1]); // Search space dimension
-    S=atoi(argv[2]);
-    K=atoi(argv[3]);
-    x=atof(argv[4]);
-    T=atoi(argv[5]);
-    c1=atoi(argv[6]);
-    interv=atoi(argv[7]);
-    N=atoi(argv[8]);
-    seme = (unsigned int) atoi(argv[9]);
-    if (argc==14) {hseme = (int) atoi(argv[12]);}
-    else {hseme= (int)seme;}
-// SC aggiunto seme e hseme
-}
-
-  results.resize(N);
-  g.resize(N);
-  X= (double*) malloc(S*D*sizeof(double));
-  V= (double*) malloc(S*D*sizeof(double));
-  P= (double*) malloc(S*D*sizeof(double));
-  v= (double*) malloc(D*sizeof(double));
-  seed=(int*) malloc(S*sizeof(int));
-  fx= (double*) malloc(S*sizeof(double));
-  fp= (double*) malloc(S*sizeof(double));
-  size=(int*) malloc(K*sizeof(int));
-  M= (double*) malloc(K*D*sizeof(double));
-  bp= (double*) malloc(K*D*sizeof(double));
-  sigma= (double*) malloc(K*sizeof(double));
-  fm= (double*) malloc(K*sizeof(double));
-  best=(bool*) malloc(K*sizeof(bool));
-
-  cudaMalloc((void **)&d_X, sizeof(double*)*S*D);
-  cudaMalloc((void **)&d_V, sizeof(double*)*S*D);
-  cudaMalloc((void **)&d_P, sizeof(double*)*S*D);
-  cudaMalloc((void **)&d_seed, sizeof(int*)*S);
-  cudaMalloc((void **)&d_sigma, sizeof(double*)*K);
-  cudaMalloc((void **)&d_bp, sizeof(double*)*K*D);
-  a=1024/D;
-  TPB=512;
-  NB=S*D/512;
-  cudaMalloc ( &devStates, S*D*sizeof( curandState ) );
-
-  // ********************************************************************* //
-  // INITIALIZATION SECTION - call only once, store app object globally    //
-  // ********************************************************************* //
-
-  // create default configuration
-  dci::RunInfo configuration = dci::RunInfo();
-
-  // set configuration parameters
-  configuration.input_file_name = argv[10];
-  string output_file = argv[11];
-// SC  configuration.input_file_name = argv[9];
-// SC  string output_file = argv[10];
-       configuration.rand_seed = hseme;
-// SC  configuration.rand_seed = 123456;
-//configuration.hs_count=10000;
-  string chosen_index = argv[12];
-  if (chosen_index.compare("tc") == 0)
-  configuration.tc_index = true;
-  else if (chosen_index.compare("zi") == 0)
-  configuration.zi_index = true;
-  //configuration.hs_input_file_name = "";
-  configuration.hs_output_file_name = "";
-
-  // create application object
-  app = new dci::Application(configuration);
-
-  // initialize application
-  app->Init();
-
-  fitness=0;
-  w = 0.73; // defined in thesis passaro
-  c=2.05;
-  // D-cube data
-  xmin = -x; xmax = x;
-
-  //-----------------------INITIALIZATION
-  setup_kernel <<< NB,TPB >>> ( devStates, (unsigned long) seme );
-// SC setup_kernel <<< NB,TPB >>> ( devStates, static_cast<unsigned int>(time(NULL)));
-  srand(seme);
-// SC  srand( static_cast<unsigned int>(time(NULL)));
-
-  for ( s = 0; s < S; s++ ) // create S particles
-  {
-    b=rand()%3;
-
-    if(b==0)
-    {
-      do
-      {
-        r1=rand()%D;
-        r2=rand()%D;
-      }while(r1==r2);
-      for ( d = 0; d < D; d++ )
-      {
-        if(r1==d || r2==d)
-        {
-          X[s*D+d] = alea( 0, xmax );
-        }
-        else
-        X[s*D+d] = alea(xmin,0);
-        V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
-        P[s*D+d]=X[s*D+d];
-      }
-    }
-    else if(b==1)
-    {
-      r1=rand()%D;
-      for ( d = 0; d < D; d++ )
-      {
-        X[s*D+d] = alea( xmin, 0);
-      }
-      for(d=0; d<r1; d++)
-      {
-        r2=rand()%D;
-        X[s*D+r2] = alea(0,xmax);
-      }
-
-      for ( d = 0; d < D; d++ )
-      {
-        V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
-        P[s*D+d]=X[s*D+d];
-      }
-    }
-    else
-    {
-      for ( d = 0; d < D; d++ )
-      {
-        X[s*D+d] = alea( xmin, xmax );
-        V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
-        P[s*D+d]=X[s*D+d];
-      }
-    }
-  }
-  cudaMemcpy(d_X, X, S*D*sizeof(double), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_V, V, S*D*sizeof(double), cudaMemcpyHostToDevice);
-  output1=perf(S,D);
-  for (s=0; s<S; s++)
-  {
-    if(!(output1[s]<= DBL_MAX))output1[s]=0;
-    fx[s]=output1[s];
-    fp[s]=fx[s];
-    for (int u=0; u<N; u++)
-    {
-
-      if(fx[s]>results[u])
-      {
-        for(int q=N-1; q>u; q--)
-        {
-
-          results[q]=results[q-1];
-          g[q]=g[q-1];
-        }
-        results[u]=fx[s];
-        g[u]=group[s];
-        break;
-      }
-      else if(fx[s]==results[u])
-      {
-        if (g[u]==group[s]) break;
-      }
-    }
-  }
-  cudaMemcpy(d_P, P, S*D*sizeof(double), cudaMemcpyHostToDevice);
-
-  k_means(); //k-means algorithm
-  cudaMemcpy(d_seed, seed, S*sizeof(int), cudaMemcpyHostToDevice);
-
-  //--------------------ITERATIONS
-  for (int t=1; t<T; t++)
-  {
-    update();
-    if (t % c1 ==0)
-    {
-      k_means();
-      identify_niches();
-    }
-
-    //PRINT ON SCREEN
-
-    std::ofstream outfile;
-    std::ofstream outfile2;
-
-    //outfile.open("dati_sistemi/sistema_test.txt", std::ios_base::app);
-    //outfile.open("risultati/risultato_1.txt", std::ios_base::app);
-    outfile.open(output_file, std::ios_base::app);
-    //outfile2.open("dati_sistemi/sistema_test2.txt", std::ios_base::app);
-
-    int var_count = 0;
-    if(t%interv==0 || t==T-1){
-      //for(int u=N-1; u>=0;u--) {
-      for(int u=0; u<N;u++) {
-        for (d=0; d<g[u].size(); d++) {
-          for (int i=var_count; i<g[u][d]; i++)
-          outfile << "0" << "\t";
-          outfile << "1" << "\t";
-          var_count = g[u][d]+1;
-          outfile2 <<"["<< g[u][d] << "]";
-          //outfile <<"["<< g[u][d] << "]";
-        }
-        while (var_count < D) {
-          outfile << "0" << "\t";
-          var_count++;
-        }
-        outfile << results[u]<< "\n";
-        outfile2 << results[u]<< "\n";
-        //cout <<" " << results[u]<< "\n";
-        var_count = 0;
-      }
-
-      cout << "fitness computed " << fitness << " times\n";
-      printf("Time taken: %.4fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
-      cout <<"------------------------\n\n";
-    }
-    outfile.close();
-    outfile2.close();
-
-  }
-  // delete app object
-  cudaFree(d_X);
-  cudaFree(d_V);
-  cudaFree(d_P);
-  cudaFree(d_bp);
-  cudaFree(d_seed);
-  cudaFree(d_sigma);
-  delete app;
-
-  return 0;
-}
 
 
 double alea( double a, double b )
@@ -608,7 +294,6 @@ void update()
   }
   cudaMemcpy(d_P, P, S*D*sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(d_bp, bp, K*D*sizeof(double), cudaMemcpyHostToDevice);
-
 }
 
 void identify_niches()
@@ -753,5 +438,247 @@ void identify_niches()
 
   }
   cudaMemcpy(d_P, P, S*D*sizeof(double), cudaMemcpyHostToDevice);
+}
 
+int main(int argc, const char * argv[]) {
+  clock_t tStart = clock();
+  int d; // Current dimension
+  int s; // Rank of the current particle
+  int c1; // intervals for identify niches
+  int interv; // print interval
+
+  pi = acos( -1 ); // for rastrigin function
+  if (argc < 13)
+  // SC if (argc < 10)      Mandatory parameters are 12 + the program name
+  { // We expect 5 arguments: the program name, the source path and the destination path
+    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results seed inputfile outputfile zi/tc [h_seed]" << endl;
+    // SC    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results inputfile outputfile" << endl;
+    return 1;
+  }
+  else
+  {
+    D =atoi(argv[1]); // Search space dimension
+    S=atoi(argv[2]);
+    K=atoi(argv[3]);
+    x=atof(argv[4]);
+    T=atoi(argv[5]);
+    c1=atoi(argv[6]);
+    interv=atoi(argv[7]);
+    N=atoi(argv[8]);
+    rseed = (unsigned int) atoi(argv[9]);
+    if (argc == 14) {hseed = (int) atoi(argv[12]);}
+    else {hseed = (int)rseed;}
+  }
+
+  results.resize(N);
+  g.resize(N);
+  X= (double*) malloc(S*D*sizeof(double));
+  V= (double*) malloc(S*D*sizeof(double));
+  P= (double*) malloc(S*D*sizeof(double));
+  v= (double*) malloc(D*sizeof(double));
+  seed=(int*) malloc(S*sizeof(int));
+  fx= (double*) malloc(S*sizeof(double));
+  fp= (double*) malloc(S*sizeof(double));
+  size=(int*) malloc(K*sizeof(int));
+  M= (double*) malloc(K*D*sizeof(double));
+  bp= (double*) malloc(K*D*sizeof(double));
+  sigma= (double*) malloc(K*sizeof(double));
+  fm= (double*) malloc(K*sizeof(double));
+  best=(bool*) malloc(K*sizeof(bool));
+
+  cudaMalloc((void **)&d_X, sizeof(double*)*S*D);
+  cudaMalloc((void **)&d_V, sizeof(double*)*S*D);
+  cudaMalloc((void **)&d_P, sizeof(double*)*S*D);
+  cudaMalloc((void **)&d_seed, sizeof(int*)*S);
+  cudaMalloc((void **)&d_sigma, sizeof(double*)*K);
+  cudaMalloc((void **)&d_bp, sizeof(double*)*K*D);
+  a=1024/D;
+  TPB=512;
+  NB=S*D/512;
+  cudaMalloc ( &devStates, S*D*sizeof( curandState ) );
+
+  // ********************************************************************* //
+  // INITIALIZATION SECTION - call only once, store app object globally    //
+  // ********************************************************************* //
+
+  // create default configuration
+  dci::RunInfo configuration = dci::RunInfo();
+
+  // set configuration parameters
+  configuration.input_file_name = argv[10];
+  string output_file = argv[11];
+  // SC  configuration.input_file_name = argv[9];
+  // SC  string output_file = argv[10];
+  configuration.rand_seed = hseed;
+  // SC  configuration.rand_seed = 123456;
+  //configuration.hs_count=10000;
+  string chosen_index = argv[12];
+  if (chosen_index.compare("tc") == 0)
+  configuration.tc_index = true;
+  else if (chosen_index.compare("zi") == 0)
+  configuration.zi_index = true;
+  //configuration.hs_input_file_name = "";
+  configuration.hs_output_file_name = "";
+
+  // create application object
+  app = new dci::Application(configuration);
+
+  // initialize application
+  app->Init();
+
+  fitness=0;
+  w = 0.73;
+  c = 2.05;
+  // D-cube data
+  xmin = -x; xmax = x;
+
+  //-----------------------INITIALIZATION
+  setup_kernel <<< NB,TPB >>> ( devStates, (unsigned long) rseed );
+  // SC setup_kernel <<< NB,TPB >>> ( devStates, static_cast<unsigned int>(time(NULL)));
+  srand(rseed);
+  // SC  srand( static_cast<unsigned int>(time(NULL)));
+
+  for ( s = 0; s < S; s++ ) // create S particles
+  {
+    b = rand()%3;
+
+    if (b==0)
+    {
+      do
+      {
+        r1 = rand()%D;
+        r2 = rand()%D;
+      }while(r1==r2);
+      for (d = 0; d < D; d++)
+      {
+        if(r1==d || r2==d)
+        {
+          X[s*D+d] = alea( 0, xmax );
+        }
+        else
+        X[s*D+d] = alea(xmin,0);
+        V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
+        P[s*D+d] = X[s*D+d];
+      }
+    }
+    else if(b==1)
+    {
+      r1 = rand()%D;
+      for (d = 0; d < D; d++)
+      {
+        X[s*D+d] = alea(xmin, 0);
+      }
+      for(d=0; d<r1; d++)
+      {
+        r2 = rand()%D;
+        X[s*D+r2] = alea(0,xmax);
+      }
+
+      for (d = 0; d < D; d++)
+      {
+        V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
+        P[s*D+d] = X[s*D+d];
+      }
+    }
+    else
+    {
+      for (d = 0; d < D; d++)
+      {
+        X[s*D+d] = alea( xmin, xmax );
+        V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
+        P[s*D+d] = X[s*D+d];
+      }
+    }
+  }
+  cudaMemcpy(d_X, X, S*D*sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_V, V, S*D*sizeof(double), cudaMemcpyHostToDevice);
+  output1 = perf(S,D);
+  for (s=0; s<S; s++)
+  {
+    if(!(output1[s] <= DBL_MAX))output1[s]=0;
+    fx[s] = output1[s];
+    fp[s] = fx[s];
+    for (int u=0; u<N; u++)
+    {
+      if(fx[s]>results[u])
+      {
+        for(int q=N-1; q>u; q--)
+        {
+          results[q]=results[q-1];
+          g[q]=g[q-1];
+        }
+        results[u]=fx[s];
+        g[u]=group[s];
+        break;
+      }
+      else if(fx[s]==results[u])
+      {
+        if (g[u]==group[s]) break;
+      }
+    }
+  }
+  cudaMemcpy(d_P, P, S*D*sizeof(double), cudaMemcpyHostToDevice);
+
+  k_means(); //k-means algorithm
+  cudaMemcpy(d_seed, seed, S*sizeof(int), cudaMemcpyHostToDevice);
+
+  //--------------------ITERATIONS
+  for (int t=1; t<T; t++)
+  {
+    update();
+    if (t % c1 ==0)
+    {
+      k_means();
+      identify_niches();
+    }
+
+    //PRINT ON SCREEN
+    std::ofstream outfile;
+    std::ofstream outfile2;
+
+    //outfile.open("dati_sistemi/sistema_test.txt", std::ios_base::app);
+    //outfile.open("risultati/risultato_1.txt", std::ios_base::app);
+    outfile.open(output_file, std::ios_base::app);
+    //outfile2.open("dati_sistemi/sistema_test2.txt", std::ios_base::app);
+
+    int var_count = 0;
+    if(t%interv==0 || t==T-1){
+      //for(int u=N-1; u>=0;u--) {
+      for(int u=0; u<N;u++) {
+        for (d=0; d<g[u].size(); d++) {
+          for (int i=var_count; i<g[u][d]; i++)
+          outfile << "0" << "\t";
+          outfile << "1" << "\t";
+          var_count = g[u][d]+1;
+          outfile2 <<"["<< g[u][d] << "]";
+          //outfile <<"["<< g[u][d] << "]";
+        }
+        while (var_count < D) {
+          outfile << "0" << "\t";
+          var_count++;
+        }
+        outfile << results[u]<< "\n";
+        outfile2 << results[u]<< "\n";
+        //cout <<" " << results[u]<< "\n";
+        var_count = 0;
+      }
+
+      cout << "fitness computed " << fitness << " times\n";
+      cout << "Time taken: " << (double)(clock() - tStart)/CLOCKS_PER_SEC << "s\n";
+      cout <<"------------------------\n\n";
+    }
+    outfile.close();
+    outfile2.close();
+
+  }
+  // delete app object
+  cudaFree(d_X);
+  cudaFree(d_V);
+  cudaFree(d_P);
+  cudaFree(d_bp);
+  cudaFree(d_seed);
+  cudaFree(d_sigma);
+  delete app;
+
+  return 0;
 }

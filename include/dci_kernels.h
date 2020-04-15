@@ -1,17 +1,9 @@
-/*
-* To change this license header, choose License Headers in Project Properties.
-* To change this template file, choose Tools | Templates
-* and open the template in the editor.
-*/
 
 /*
-* File:   dci_kernels.hu
+* File:   dci_kernels.h
 * Author: e.vicari
 *
-* Created on 2 marzo 2016, 10.52
 */
-
-/* choose index  MOD */
 
 #ifndef DCI_KERNELS_H
 #define DCI_KERNELS_H
@@ -19,8 +11,6 @@
 #include <math.h>
 #include "common.h"
 #include "register_utils.h"
-
-//#include "float.h"
 
 
 typedef struct __SystemParameters
@@ -42,12 +32,7 @@ __constant__ SystemParameters SP;
 * C  -> number of clusters in current batch
 * R  -> cluster size in number of variables
 * system_entropies contains joint entropy at index N
-
-
-
 */
-
-
 template<unsigned int S, bool HistogramOnly> __global__ void histo_kernel(
   register_t* system,
   register_t* clusters,
@@ -138,324 +123,281 @@ template<unsigned int S, bool HistogramOnly> __global__ void histo_kernel(
 
   }
 
-  /*
-  * Computes entropy, cluster index and/or statistical index for a cluster batch (one thread = one cluster)
-  *
-  * S  -> cluster size in number of registers
-  * N  -> sample size in bits
-  * NA -> number of agents
-  * M  -> number of samples
-  * L  -> number of maximum possible sample values
-  * C  -> number of clusters in current batch
-  * R  -> cluster size in number of variables
-  * system_entropies contains joint entropy at index N
-  */
-  template<unsigned int S> __global__ void entropy_kernel(unsigned int* frequencies,
-    float* entropies, unsigned int* count)
+/*
+* Computes entropy, cluster index and/or statistical index for a cluster batch (one thread = one cluster)
+*
+* S  -> cluster size in number of registers
+* N  -> sample size in bits
+* NA -> number of agents
+* M  -> number of samples
+* L  -> number of maximum possible sample values
+* C  -> number of clusters in current batch
+* R  -> cluster size in number of variables
+* system_entropies contains joint entropy at index N
+*/
+template<unsigned int S> __global__ void entropy_kernel(unsigned int* frequencies,
+  float* entropies, unsigned int* count)
+  {
+    unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
+    if (i >= SP.C) return;
+
+    unsigned int block_root = blockIdx.x * blockDim.x * SP.L;
+    unsigned int* freq_root = frequencies + block_root;
+
+    // store temp entropy in double-precision var
+    double temp = 0.0f, den = (double)SP.M, freq;
+    unsigned int tmp_f = threadIdx.x;
+    if (count) *count = 0;
+
+    // compute entropy
+    for (unsigned int f = 0; f != SP.L; ++f)
     {
-      //unsigned int md = blockIdx.x & (unsigned int)1;
-      //unsigned int i = (blockIdx.x - md)*blockDim.x + threadIdx.x * 2 + md;
-      unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
-      if (i >= SP.C) return;
-
-      unsigned int block_root = blockIdx.x * blockDim.x * SP.L;
-      unsigned int* freq_root = frequencies + block_root;
-
-      // store temp entropy in double-precision var
-      double temp = 0.0f, den = (double)SP.M, freq;
-      unsigned int tmp_f = threadIdx.x;
-      if (count) *count = 0;
-
-      // compute entropy
-      for (unsigned int f = 0; f != SP.L; ++f)
+      // add to entropy only if frequency is non-zero
+      if (freq_root[tmp_f])
       {
-
-        // add to entropy only if frequency is non-zero
-        if (freq_root[tmp_f])
-        {
-          if (count) (*count)++;
-          freq = (double)freq_root[tmp_f] / den;
-          temp -= freq * log(freq);
-        }
-
-        // update temp index
-        tmp_f += blockDim.x;
-
+        if (count) (*count)++;
+        freq = (double)freq_root[tmp_f] / den;
+        temp -= freq * log(freq);
       }
 
-      // now store entropy in float output
-      entropies[i] = (float)temp;
-
+      // update temp index
+      tmp_f += blockDim.x;
     }
 
-  /*
-  * Computes entropy, cluster index and/or statistical index for a cluster batch (one thread = one cluster)
-  *
-  * S  -> cluster size in number of registers
-  * N  -> sample size in bits
-  * NA -> number of agents
-  * M  -> number of samples
-  * L  -> number of maximum possible sample values
-  * C  -> number of clusters in current batch
-  * R  -> cluster size in number of variables
-  * system_entropies contains joint entropy at index N
-  */
-  template<unsigned int S, bool ComputeTc, bool ComputeZI, bool ComputeSI, bool ComputeSI_2, bool HistogramOnly, bool ComputeMutualInformation> __global__ void cluster_kernel(
-    float* system_entropies,
-    float* hsystem_stats,
-    register_t* clusters,
-    unsigned int* cluster_sizes,
-    float* entropies, float* output)
+    // now store entropy in float output
+    entropies[i] = (float)temp;
+  }
+
+/*
+* Computes entropy, cluster index and/or statistical index for a cluster batch (one thread = one cluster)
+*
+* S  -> cluster size in number of registers
+* N  -> sample size in bits
+* NA -> number of agents
+* M  -> number of samples
+* L  -> number of maximum possible sample values
+* C  -> number of clusters in current batch
+* R  -> cluster size in number of variables
+* system_entropies contains joint entropy at index N
+*/
+template<unsigned int S, bool ComputeTc, bool ComputeZI, bool ComputeSI, bool ComputeSI_2, bool HistogramOnly, bool ComputeMutualInformation> __global__ void cluster_kernel(
+  float* system_entropies,
+  float* hsystem_stats,
+  register_t* clusters,
+  unsigned int* cluster_sizes,
+  float* entropies, float* output)
+  {
+    //  float gval=0;
+    unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
+
+    if (i >= SP.C) return;
+
+    register_t* cur_cluster = clusters + i * S;
+
+    // store entropy to system entropies and exit
+    if (HistogramOnly)
     {
-      //  float gval=0;
-      unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
-
-      if (i >= SP.C) return;
-
-      register_t* cur_cluster = clusters + i * S;
-
-      // store entropy to system entropies and exit
-      if (HistogramOnly)
+      bool ent_set = false;
+      for (unsigned int v = 0; v != SP.N; ++v)
+      if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
       {
-        bool ent_set = false;
-        for (unsigned int v = 0; v != SP.N; ++v)
-        if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
-        {
-          system_entropies[v] = ent_set ? 0.0f : entropies[i]; // entropy stored only in first agent variable
-          ent_set = true;
-        }
+        system_entropies[v] = ent_set ? 0.0f : entropies[i]; // entropy stored only in first agent variable
+        ent_set = true;
+      }
+    }
+    else
+    {
+      // check if whole system thread (store joint entropy and exit)
+      if (cluster_sizes[i] == SP.NA)
+      {
+        system_entropies[SP.N] = entropies[i];
+        output[i] = 0.0f;
+        return;
+      }
+
+      // check if empty cluster
+      if (cluster_sizes[i] == 0)
+      {
+        output[i] = 0.0f;
+        return;
+      }
+
+      // check if empty comp. cluster
+      unsigned int comp_i = i % 2 ? (i-1) : (i+1);
+      if (cluster_sizes[comp_i] == 0)
+      {
+        output[i] = 0.0f;
+        return;
+      }
+
+      // compute integration
+      float integration = -entropies[i];
+
+      for (unsigned int v = 0; v != SP.N; ++v)
+      if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
+      integration += system_entropies[v];
+
+      // wait for all threads in block - complementary cluster is needed
+      __syncthreads();
+
+      // compute cluster index
+      if (ComputeMutualInformation)
+      {
+        float mutual_information = entropies[i] + entropies[comp_i] - system_entropies[SP.N];
+        output[i] = mutual_information != 0.0f ? (integration / mutual_information) : 0.0f;
       }
       else
+      output[i] = integration;
+
+      // check which index has to be computed
+      if (ComputeTc)
       {
+        output[i] = (float)(((double)output[i] - (double)hsystem_stats[2 * cluster_sizes[i] - 2]) / (double)hsystem_stats[2 * cluster_sizes[i] - 1]);
+        if (output[i] != output[i]) output[i] = 0.0f;
+      }
 
-        // check if whole system thread (store joint entropy and exit)
-        if (cluster_sizes[i] == SP.NA)
-        {
-          system_entropies[SP.N] = entropies[i];
-          output[i] = 0.0f;
-          return;
-        }
+      if (ComputeZI)  // ZI= 2nI -g / std(2g)
+      {
+        //cardinality of the alphabet of a single random variable:
+        unsigned int cardinality = powf(2,SP.N/SP.NA); // SP.N/SP.NA=number of bit per random variable -> cardinality is 2^(num. of bit)
+        //unsigned int cardinality=3;
+        // exemple: if X is encoded with 2 bits then I can have: 00,01,10,11 -> 2^2 = 4 possible values. If I have 3 bits then 2^3 = 8 values.
+        // The DoF formula is: [Prod_i(card_i)-1] - [sum_i(card_i-1)] where prod and sum goes from 1 to number of elements in the cluster.
+        //assuming all the RV to have same cardinality it becomes:
+        float gval= powf(cardinality,cluster_sizes[i]) -1 - cluster_sizes[i] * (cardinality -1); // DoF
+        output[i]=(float)((2*SP.M*integration - gval) / sqrtf(2*gval));
+      }
 
-        // check if empty cluster
-        if (cluster_sizes[i] == 0)
-        {
-          output[i] = 0.0f;
-          return;
-        }
+      if (ComputeSI)  // SI = 2nI/g
+      {
+        //cardinality of the alphabet of a single random variable:
+        unsigned int cardinality = powf(2,SP.N/SP.NA); // SP.N/SP.NA=number of bit per random variable -> cardinality is 2^(num. of bit)
+        //unsigned int cardinality=3;
+        // exemple: if X is encoded with 2 bits then I can have: 00,01,10,11 -> 2^2 = 4 possible values. If I have 3 bits then 2^3 = 8 values.
+        // The DoF formula is: [Prod_i(card_i)-1] - [sum_i(card_i-1)] where prod and sum goes from 1 to number of elements in the cluster.
+        //assuming all the RV to have same cardinality it becomes:
+        float gval= powf(cardinality,cluster_sizes[i]) -1 - cluster_sizes[i] * (cardinality -1); // DoF
 
-        // check if empty comp. cluster
-        unsigned int comp_i = i % 2 ? (i-1) : (i+1);
-        if (cluster_sizes[comp_i] == 0)
-        {
-          output[i] = 0.0f;
-          return;
-        }
+        output[i]=(float)((2*SP.M*integration) /gval);
+      }
 
-        // compute integration
-        float integration = -entropies[i];
-
+      if (ComputeSI_2) // SI2= I/Imax
+      {
+        float min_entropy = 100;
+        float sum_entropies=0;
         for (unsigned int v = 0; v != SP.N; ++v)
-        if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
-        integration += system_entropies[v];
-
-
-        // wait for all threads in block - complementary cluster is needed
-        __syncthreads();
-
-        // compute cluster index
-        if (ComputeMutualInformation)
         {
-          float mutual_information = entropies[i] + entropies[comp_i] - system_entropies[SP.N];
-          output[i] = mutual_information != 0.0f ? (integration / mutual_information) : 0.0f;
-        }
-        else
-        output[i] = integration;
-
-        // check which index has to be computed
-        if (ComputeTc)
-        {
-          output[i] = (float)(((double)output[i] - (double)hsystem_stats[2 * cluster_sizes[i] - 2]) / (double)hsystem_stats[2 * cluster_sizes[i] - 1]);
-          if (output[i] != output[i]) output[i] = 0.0f;
-        }
-
-        if (ComputeZI)  // ZI= 2nI -g / std(2g)
-        {
-          //cardinality of the alphabet of a single random variable:
-          unsigned int cardinality = powf(2,SP.N/SP.NA); // SP.N/SP.NA=number of bit per random variable -> cardinality is 2^(num. of bit)
-          //unsigned int cardinality=3;
-          // exemple: if X is encoded with 2 bits then I can have: 00,01,10,11 -> 2^2 = 4 possible values. If I have 3 bits then 2^3 = 8 values.
-          // The DoF formula is: [Prod_i(card_i)-1] - [sum_i(card_i-1)] where prod and sum goes from 1 to number of elements in the cluster.
-          //assuming all the RV to have same cardinality it becomes:
-          float gval= powf(cardinality,cluster_sizes[i]) -1 - cluster_sizes[i] * (cardinality -1); // DoF
-
-          output[i]=(float)((2*SP.M*integration - gval) / sqrtf(2*gval));
-
-        }
-
-        if (ComputeSI)  // SI = 2nI/g
-        {
-
-          //float gval= powf(2,cluster_sizes[i]) -1 - cluster_sizes[i]; // DoF
-
-          //cardinality of the alphabet of a single random variable:
-          unsigned int cardinality = powf(2,SP.N/SP.NA); // SP.N/SP.NA=number of bit per random variable -> cardinality is 2^(num. of bit)
-          //unsigned int cardinality=3;
-          // exemple: if X is encoded with 2 bits then I can have: 00,01,10,11 -> 2^2 = 4 possible values. If I have 3 bits then 2^3 = 8 values.
-          // The DoF formula is: [Prod_i(card_i)-1] - [sum_i(card_i-1)] where prod and sum goes from 1 to number of elements in the cluster.
-          //assuming all the RV to have same cardinality it becomes:
-          float gval= powf(cardinality,cluster_sizes[i]) -1 - cluster_sizes[i] * (cardinality -1); // DoF
-
-          output[i]=(float)((2*SP.M*integration) /gval);
-        }
-
-        if (ComputeSI_2) // SI2= I/Imax
-        {
-
-          float min_entropy = 100;
-          //float min_entropy = FLT_MAX;
-
-          float sum_entropies=0;
-
-          for (unsigned int v = 0; v != SP.N; ++v)
+          if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
           {
-
-            if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
-            {
-              // search the minimum entropy in the cluster
-              min_entropy = ((min_entropy < system_entropies[v]) ? min_entropy : system_entropies[v]);
-              sum_entropies = sum_entropies +  system_entropies[v]; // sum of the entropies in the cluster
-            }
-
+            // search the minimum entropy in the cluster
+            min_entropy = ((min_entropy < system_entropies[v]) ? min_entropy : system_entropies[v]);
+            sum_entropies = sum_entropies +  system_entropies[v]; // sum of the entropies in the cluster
           }
-          output[i]=  integration/(sum_entropies - min_entropy);
-          // Imax= sum(entropies) - minEntropy
-
         }
+        output[i]=  integration/(sum_entropies - min_entropy);
+      }
+    }
+  }
 
+/*
+* Cardinality
+* Computes entropy, cluster index and/or statistical index for a cluster batch (one thread = one cluster)
+*
+* S  -> cluster size in number of registers
+* N  -> sample size in bits
+* NA -> number of agents
+* M  -> number of samples
+* L  -> number of maximum possible sample values
+* C  -> number of clusters in current batch
+* R  -> cluster size in number of variables
+* system_entropies contains joint entropy at index N
+*/
+template<unsigned int S, bool ComputeZI,bool ComputeSI,bool ComputeSI_2, bool HistogramOnly, bool ComputeMutualInformation> __global__ void cluster_kernel_card(
+  float* system_entropies,
+  float* hsystem_stats,
+  register_t* clusters,
+  unsigned int* cluster_sizes,
+  float* entropies, float* output, unsigned int* cardinalities)
+  {
+    //  float gval=0;
+    unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
+
+    if (i >= SP.C) return;
+
+    register_t* cur_cluster = clusters + i * S;
+
+    // store entropy to system entropies and exit
+    if (HistogramOnly)
+    {
+      bool ent_set = false;
+      for (unsigned int v = 0; v != SP.N; ++v)
+      if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
+      {
+        system_entropies[v] = ent_set ? 0.0f : entropies[i]; // entropy stored only in first agent variable
+        ent_set = true;
+      }
+    }
+    else
+    {
+      // check if whole system thread (store joint entropy and exit)
+      if (cluster_sizes[i] == SP.NA)
+      {
+        system_entropies[SP.N] = entropies[i];
+        output[i] = 0.0f;
+        return;
       }
 
-    }
-
-  /*
-  * Cardinality
-  * Computes entropy, cluster index and/or statistical index for a cluster batch (one thread = one cluster)
-  *
-  * S  -> cluster size in number of registers
-  * N  -> sample size in bits
-  * NA -> number of agents
-  * M  -> number of samples
-  * L  -> number of maximum possible sample values
-  * C  -> number of clusters in current batch
-  * R  -> cluster size in number of variables
-  * system_entropies contains joint entropy at index N
-  */
-  template<unsigned int S, bool ComputeZI,bool ComputeSI,bool ComputeSI_2, bool HistogramOnly, bool ComputeMutualInformation> __global__ void cluster_kernel_card(
-    float* system_entropies,
-    float* hsystem_stats,
-    register_t* clusters,
-    unsigned int* cluster_sizes,
-    float* entropies, float* output, unsigned int* cardinalities)
-    {
-
-
-      //  float gval=0;
-      unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
-
-      if (i >= SP.C) return;
-
-      register_t* cur_cluster = clusters + i * S;
-
-      // store entropy to system entropies and exit
-      if (HistogramOnly)
+      // check if empty cluster
+      if (cluster_sizes[i] == 0)
       {
-        bool ent_set = false;
-        for (unsigned int v = 0; v != SP.N; ++v)
-        if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
-        {
-          system_entropies[v] = ent_set ? 0.0f : entropies[i]; // entropy stored only in first agent variable
-          ent_set = true;
-        }
+        output[i] = 0.0f;
+        return;
+      }
+
+      // check if empty comp. cluster
+      unsigned int comp_i = i % 2 ? (i-1) : (i+1);
+      if (cluster_sizes[comp_i] == 0)
+      {
+        output[i] = 0.0f;
+        return;
+      }
+
+      // compute integration
+      float integration = -entropies[i];
+
+      for (unsigned int v = 0; v != SP.N; ++v)
+      if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
+      integration += system_entropies[v];
+
+      // wait for all threads in block - complementary cluster is needed
+      __syncthreads();
+
+      // compute cluster index
+      if (ComputeMutualInformation)
+      {
+        float mutual_information = entropies[i] + entropies[comp_i] - system_entropies[SP.N];
+        output[i] = mutual_information != 0.0f ? (integration / mutual_information) : 0.0f;
       }
       else
+      output[i] = integration;
+
+      // check which index has to be computed
+      if (ComputeZI)  // ZI= 2nI -g / std(2g)
       {
-
-        // check if whole system thread (store joint entropy and exit)
-        if (cluster_sizes[i] == SP.NA)
-        {
-          system_entropies[SP.N] = entropies[i];
-          output[i] = 0.0f;
-          return;
-        }
-
-        // check if empty cluster
-        if (cluster_sizes[i] == 0)
-        {
-          output[i] = 0.0f;
-          return;
-        }
-
-        // check if empty comp. cluster
-        unsigned int comp_i = i % 2 ? (i-1) : (i+1);
-        if (cluster_sizes[comp_i] == 0)
-        {
-          output[i] = 0.0f;
-          return;
-        }
-
-        // compute integration
-        float integration = -entropies[i];
-
-        for (unsigned int v = 0; v != SP.N; ++v)
-        if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
-        integration += system_entropies[v];
-
-
-        // wait for all threads in block - complementary cluster is needed
-        __syncthreads();
-
-        // compute cluster index
-        if (ComputeMutualInformation)
-        {
-          float mutual_information = entropies[i] + entropies[comp_i] - system_entropies[SP.N];
-          output[i] = mutual_information != 0.0f ? (integration / mutual_information) : 0.0f;
-        }
-        else
-        output[i] = integration;
-
-        // check which index has to be computed
-        if (ComputeZI)  // ZI= 2nI -g / std(2g)
-        {
-          //cardinality of the alphabet of a single random variable:
-          //unsigned int cardinality = powf(2,SP.N/SP.NA); // SP.N/SP.NA=number of bit per random variable -> cardinality is 2^(num. of bit)
-          //unsigned int cardinality=cardinalities[1];
-
-          /* unsigned int prod_card=1;
-          unsigned int sum_card=0;
-
-          for (unsigned int v = 0; v != SP.N; ++v)
-          if (dci::RegisterUtils::GetBitAtPos(cur_cluster, v))
-          {
-          sum_card = sum_card + cardinalities[v]-1;
-          prod_card= prod_card*cardinalities[v];
-        } */
-
-
-        unsigned int prod_card=1;
-        unsigned int sum_card=0;
-
-        unsigned int num_var=0;
+        //cardinality of the alphabet of a single random variable:
+        //unsigned int cardinality = powf(2,SP.N/SP.NA); // SP.N/SP.NA=number of bit per random variable -> cardinality is 2^(num. of bit)
+        //unsigned int cardinality=cardinalities[1];
+        unsigned int prod_card = 1;
+        unsigned int sum_card = 0;
+        unsigned int num_var = 0;
 
         for (unsigned int v = 0; v != SP.N; ++v)
         {
           if (dci::RegisterUtils::getBitAtPos(cur_cluster, v) && system_entropies[v]!=0.0f)
           {
             // entropy stored only in first agent variable
-
             prod_card=prod_card*cardinalities[num_var];
             sum_card=sum_card+cardinalities[num_var]-1;
-
-            //num_var++;
-
           }
           if(system_entropies[v]!=0.0f)
           num_var++;
@@ -471,8 +413,6 @@ template<unsigned int S, bool HistogramOnly> __global__ void histo_kernel(
         unsigned int gval= prod_card-sum_card; // DoF
 
         output[i]=(float)((2*SP.M*integration - gval) / sqrtf(2*gval));
-        //output[i]=gval;
-
       }
 
       if (ComputeSI)  // SI = 2nI/g
@@ -491,7 +431,6 @@ template<unsigned int S, bool HistogramOnly> __global__ void histo_kernel(
           sum_card=sum_card+cardinalities[num_var]-1;
 
           num_var++;
-
         }
 
         prod_card=prod_card-1;
@@ -507,209 +446,187 @@ template<unsigned int S, bool HistogramOnly> __global__ void histo_kernel(
         //float gval= powf(cardinality,cluster_sizes[i]) -1 - cluster_sizes[i] * (cardinality -1); // DoF
 
         unsigned int gval= prod_card-sum_card;
-
         output[i]=(float)((2*SP.M*integration) /gval);
-
-
-
       }
 
       if (ComputeSI_2) // SI2= I/Imax
       {
-
         float min_entropy = 100;
-
         float sum_entropies=0;
 
         for (unsigned int v = 0; v != SP.N; ++v)
         {
-
           if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
           {
             // search the minimum entropy in the cluster
-
-            //min_entropy = ((min_entropy < system_entropies[v]) ? min_entropy : system_entropies[v]);
             min_entropy = ((system_entropies[v]!=0.0f && system_entropies[v]<min_entropy) ? system_entropies[v] : min_entropy );
             sum_entropies = sum_entropies +  system_entropies[v]; // sum of the entropies in the cluster
-
           }
-
-
         }
         output[i]=  integration/(sum_entropies - min_entropy);
-        // Imax= sum(entropies) - minEntropy
-
       }
-
     }
-
   }
 
-  /*
-  * Computes entropy, cluster index and/or statistical index for a cluster batch (one thread = one cluster)
-  *
-  * S  -> cluster size in number of registers
-  * N  -> sample size in bits
-  * NA -> number of agents
-  * M  -> number of samples
-  * L  -> number of maximum possible sample values
-  * C  -> number of clusters in current batch
-  * R  -> cluster size in number of variables
-  * system_entropies contains joint entropy at index N
-  */
-  template<unsigned int S, bool ComputeZI,bool ComputeSI,bool ComputeSI_2, bool HistogramOnly, bool ComputeMutualInformation> __global__ void cluster_kernel_agent_pool(
-    float* system_entropies,
-    float* hsystem_stats,
-    register_t* clusters,
-    unsigned int* cluster_sizes,
-    float* entropies, float* output, register_t* agent_pool)
+/*
+* Computes entropy, cluster index and/or statistical index for a cluster batch (one thread = one cluster)
+*
+* S  -> cluster size in number of registers
+* N  -> sample size in bits
+* NA -> number of agents
+* M  -> number of samples
+* L  -> number of maximum possible sample values
+* C  -> number of clusters in current batch
+* R  -> cluster size in number of variables
+* system_entropies contains joint entropy at index N
+*/
+template<unsigned int S, bool ComputeZI,bool ComputeSI,bool ComputeSI_2, bool HistogramOnly, bool ComputeMutualInformation> __global__ void cluster_kernel_agent_pool(
+  float* system_entropies,
+  float* hsystem_stats,
+  register_t* clusters,
+  unsigned int* cluster_sizes,
+  float* entropies, float* output, register_t* agent_pool)
+  {
+    //  float gval=0;
+    unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
+
+    if (i >= SP.C) return;
+
+    register_t* cur_cluster = clusters + i * S;
+
+    // store entropy to system entropies and exit
+    if (HistogramOnly)
     {
-      //  float gval=0;
-      unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
-
-      if (i >= SP.C) return;
-
-      register_t* cur_cluster = clusters + i * S;
-
-      // store entropy to system entropies and exit
-      if (HistogramOnly)
+      bool ent_set = false;
+      for (unsigned int v = 0; v != SP.N; ++v)
+      if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
       {
-        bool ent_set = false;
-        for (unsigned int v = 0; v != SP.N; ++v)
-        if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
-        {
-          system_entropies[v] = ent_set ? 0.0f : entropies[i]; // entropy stored only in first agent variable
-          ent_set = true;
-        }
+        system_entropies[v] = ent_set ? 0.0f : entropies[i]; // entropy stored only in first agent variable
+        ent_set = true;
+      }
+    }
+    else
+    {
+      // check if whole system thread (store joint entropy and exit)
+      if (cluster_sizes[i] == SP.NA)
+      {
+        system_entropies[SP.N] = entropies[i];
+        output[i] = 0.0f;
+        return;
+      }
+
+      // check if empty cluster
+      if (cluster_sizes[i] == 0)
+      {
+        output[i] = 0.0f;
+        return;
+      }
+
+      // check if empty comp. cluster
+      unsigned int comp_i = i % 2 ? (i-1) : (i+1);
+      if (cluster_sizes[comp_i] == 0)
+      {
+        output[i] = 0.0f;
+        return;
+      }
+
+      // compute integration
+      float integration = -entropies[i];
+
+      for (unsigned int v = 0; v != SP.N; ++v)
+      if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
+      integration += system_entropies[v];
+
+      // wait for all threads in block - complementary cluster is needed
+      __syncthreads();
+
+      // compute cluster index
+      if (ComputeMutualInformation)
+      {
+        float mutual_information = entropies[i] + entropies[comp_i] - system_entropies[SP.N];
+        output[i] = mutual_information != 0.0f ? (integration / mutual_information) : 0.0f;
       }
       else
+      output[i] = integration;
+
+      // check which index has to be computed
+      if (ComputeZI)  // ZI= 2nI -g / std(2g)
       {
-        // check if whole system thread (store joint entropy and exit)
-        if (cluster_sizes[i] == SP.NA)
-        {
-          system_entropies[SP.N] = entropies[i];
-          output[i] = 0.0f;
-          return;
-        }
+        //cardinality of the alphabet of a single random variable:
+        //unsigned int cardinality = powf(2,SP.N/SP.NA); // SP.N/SP.NA=number of bit per random variable -> cardinality is 2^(num. of bit)
+        unsigned int cardinality=3;
 
-        // check if empty cluster
-        if (cluster_sizes[i] == 0)
-        {
-          output[i] = 0.0f;
-          return;
-        }
-
-        // check if empty comp. cluster
-        unsigned int comp_i = i % 2 ? (i-1) : (i+1);
-        if (cluster_sizes[comp_i] == 0)
-        {
-          output[i] = 0.0f;
-          return;
-        }
-
-        // compute integration
-        float integration = -entropies[i];
+        //LAURA
+        /* unsigned int dim_Ts=1;
+        unsigned int s_dim_Tj=0;
 
         for (unsigned int v = 0; v != SP.N; ++v)
+        if (dci::RegisterUtils::GetBitAtPos(cur_cluster, v))
+        {
+        unsigned int card_var=1;
+        unsigned int vv=v;
+
+        //entropy stored only in first agent variable
+        while(system_entropies[vv]==0.0f)
+        {
+        card_var++;
+        vv++;
+      }
+
+      if(card_var!=1)
+      {
+      dim_Ts=dim_Ts*card_var;
+      s_dim_Tj=s_dim_Tj+card_var-1;
+      v=vv-1;
+    }
+  }
+
+  dim_Ts=dim_Ts-1;
+  float gval=(float) dim_Ts-s_dim_Tj;
+
+  */
+
+      // exemple: if X is encoded with 2 bits then I can have: 00,01,10,11 -> 2^2 = 4 possible values. If I have 3 bits then 2^3 = 8 values.
+      // The DoF formula is: [Prod_i(card_i)-1] - [sum_i(card_i-1)] where prod and sum goes from 1 to number of elements in the cluster.
+      //assuming all the RV to have same cardinality it becomes:
+      float gval= powf(cardinality,cluster_sizes[i]) -1 - cluster_sizes[i] * (cardinality -1); // DoF
+      output[i]=(float)((2*SP.M*integration - gval) / sqrtf(2*gval));
+    }
+
+    if (ComputeSI)  // SI = 2nI/g
+    {
+      //float gval= powf(2,cluster_sizes[i]) -1 - cluster_sizes[i]; // DoF
+
+      //cardinality of the alphabet of a single random variable:
+      //unsigned int cardinality = powf(2,SP.N/SP.NA); // SP.N/SP.NA=number of bit per random variable -> cardinality is 2^(num. of bit)
+      unsigned int cardinality=3;
+      // exemple: if X is encoded with 2 bits then I can have: 00,01,10,11 -> 2^2 = 4 possible values. If I have 3 bits then 2^3 = 8 values.
+      // The DoF formula is: [Prod_i(card_i)-1] - [sum_i(card_i-1)] where prod and sum goes from 1 to number of elements in the cluster.
+      //assuming all the RV to have same cardinality it becomes:
+      float gval= powf(cardinality,cluster_sizes[i]) -1 - cluster_sizes[i] * (cardinality -1); // DoF
+
+      output[i]=(float)((2*SP.M*integration) /gval);
+    }
+
+    if (ComputeSI_2) // SI2= I/Imax
+    {
+      float min_entropy = 100;
+      //float min_entropy = FLT_MAX;
+
+      float sum_entropies=0;
+
+      for (unsigned int v = 0; v != SP.N; ++v)
+      {
         if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
-        integration += system_entropies[v];
-
-        // wait for all threads in block - complementary cluster is needed
-        __syncthreads();
-
-        // compute cluster index
-        if (ComputeMutualInformation)
         {
-          float mutual_information = entropies[i] + entropies[comp_i] - system_entropies[SP.N];
-          output[i] = mutual_information != 0.0f ? (integration / mutual_information) : 0.0f;
+          // search the minimum entropy in the cluster
+          min_entropy = ((min_entropy < system_entropies[v]) ? min_entropy : system_entropies[v]);
+          sum_entropies = sum_entropies +  system_entropies[v]; // sum of the entropies in the cluster
         }
-        else
-        output[i] = integration;
-
-        // check which index has to be computed
-        if (ComputeZI)  // ZI= 2nI -g / std(2g)
-        {
-          //cardinality of the alphabet of a single random variable:
-          //unsigned int cardinality = powf(2,SP.N/SP.NA); // SP.N/SP.NA=number of bit per random variable -> cardinality is 2^(num. of bit)
-          unsigned int cardinality=3;
-
-          //LAURA
-          /* unsigned int dim_Ts=1;
-          unsigned int s_dim_Tj=0;
-
-          for (unsigned int v = 0; v != SP.N; ++v)
-          if (dci::RegisterUtils::GetBitAtPos(cur_cluster, v))
-          {
-          unsigned int card_var=1;
-          unsigned int vv=v;
-
-          //entropy stored only in first agent variable
-          while(system_entropies[vv]==0.0f)
-          {
-          card_var++;
-          vv++;
-        }
-
-        if(card_var!=1)
-        {
-        dim_Ts=dim_Ts*card_var;
-        s_dim_Tj=s_dim_Tj+card_var-1;
-        v=vv-1;
       }
-
-
+      output[i]=  integration/(sum_entropies - min_entropy);
     }
-
-    dim_Ts=dim_Ts-1;
-    float gval=(float) dim_Ts-s_dim_Tj;
-
-    */
-
-    // exemple: if X is encoded with 2 bits then I can have: 00,01,10,11 -> 2^2 = 4 possible values. If I have 3 bits then 2^3 = 8 values.
-    // The DoF formula is: [Prod_i(card_i)-1] - [sum_i(card_i-1)] where prod and sum goes from 1 to number of elements in the cluster.
-    //assuming all the RV to have same cardinality it becomes:
-          float gval= powf(cardinality,cluster_sizes[i]) -1 - cluster_sizes[i] * (cardinality -1); // DoF
-
-          output[i]=(float)((2*SP.M*integration - gval) / sqrtf(2*gval));
-        }
-
-        if (ComputeSI)  // SI = 2nI/g
-        {
-          //float gval= powf(2,cluster_sizes[i]) -1 - cluster_sizes[i]; // DoF
-
-          //cardinality of the alphabet of a single random variable:
-          //unsigned int cardinality = powf(2,SP.N/SP.NA); // SP.N/SP.NA=number of bit per random variable -> cardinality is 2^(num. of bit)
-          unsigned int cardinality=3;
-          // exemple: if X is encoded with 2 bits then I can have: 00,01,10,11 -> 2^2 = 4 possible values. If I have 3 bits then 2^3 = 8 values.
-          // The DoF formula is: [Prod_i(card_i)-1] - [sum_i(card_i-1)] where prod and sum goes from 1 to number of elements in the cluster.
-          //assuming all the RV to have same cardinality it becomes:
-          float gval= powf(cardinality,cluster_sizes[i]) -1 - cluster_sizes[i] * (cardinality -1); // DoF
-
-          output[i]=(float)((2*SP.M*integration) /gval);
-        }
-
-        if (ComputeSI_2) // SI2= I/Imax
-        {
-          float min_entropy = 100;
-          //float min_entropy = FLT_MAX;
-
-          float sum_entropies=0;
-
-          for (unsigned int v = 0; v != SP.N; ++v)
-          {
-            if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
-            {
-              // search the minimum entropy in the cluster
-              min_entropy = ((min_entropy < system_entropies[v]) ? min_entropy : system_entropies[v]);
-              sum_entropies = sum_entropies +  system_entropies[v]; // sum of the entropies in the cluster
-            }
-          }
-          output[i]=  integration/(sum_entropies - min_entropy);
-          // Imax= sum(entropies) - minEntropy
-        }
-
-      }
-
-    }
+  }
+}
 
 #endif /* DCI_KERNELS_H */
