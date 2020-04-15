@@ -9,7 +9,7 @@ On Linux machines:
 * make dci
 * make kmpso
 
-To test dci, enter the scripts7 folder and run:
+To test dci, enter the scripts folder and run:
 
 * python automatic_sieve.py
 
