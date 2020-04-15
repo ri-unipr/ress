@@ -100,12 +100,12 @@ namespace dci
         unsigned int NBO_offset = NBO ? (NBO + 4) : 0; // " %% " between current and original sample
         N = line.length() - NBO_offset;
         M = (fileSize(filename.c_str()) - size_offset + 1) / (N + NBO_offset + 1); // compute M according to sample size and file size
-        S = dci::RegisterUtils::GetNumberOfRegsFromNumberOfBits(N);
+        S = dci::RegisterUtils::getNumberOfRegsFromNumberOfBits(N);
 
         if (NA)
         {
           L = ((unsigned long long)1 << NA) - 1;                                     // L = 2^NA-1
-          SA = dci::RegisterUtils::GetNumberOfRegsFromNumberOfBits(NA);
+          SA = dci::RegisterUtils::getNumberOfRegsFromNumberOfBits(NA);
         }
         else
         {
@@ -113,8 +113,8 @@ namespace dci
           SA = S;
         }
 
-        SO = NO ? dci::RegisterUtils::GetNumberOfRegsFromNumberOfBits(NO) : 0;
-        SBO = NBO ? dci::RegisterUtils::GetNumberOfRegsFromNumberOfBits(NBO) : 0;
+        SO = NO ? dci::RegisterUtils::getNumberOfRegsFromNumberOfBits(NO) : 0;
+        SBO = NBO ? dci::RegisterUtils::getNumberOfRegsFromNumberOfBits(NBO) : 0;
       }
 
     /*
@@ -137,11 +137,11 @@ namespace dci
         {
           getline(in_file, dummy);
           // reset mask
-          dci::RegisterUtils::SetAllBits<false>(mutual_information_mask, NA, SA);
+          dci::RegisterUtils::setAllBits<false>(mutual_information_mask, NA, SA);
 
           // set single bits
           for (unsigned int i = 0; i != NA; ++i)
-          dci::RegisterUtils::SetBitAtPos(mutual_information_mask, i, dummy[i+3] == '1');
+          dci::RegisterUtils::setBitAtPos(mutual_information_mask, i, dummy[i+3] == '1');
         }
 
         // check if first line contains agent names
@@ -222,10 +222,10 @@ namespace dci
           if (implicit_agents)
           {
             // reset agent
-            dci::RegisterUtils::SetAllBits<false>(agent_pool, N, S);
+            dci::RegisterUtils::setAllBits<false>(agent_pool, N, S);
 
             // set bit for single variable
-            dci::RegisterUtils::SetBitAtPos(agent_pool, a, 1);
+            dci::RegisterUtils::setBitAtPos(agent_pool, a, 1);
 
             // advance to next
             agent_pool += S;

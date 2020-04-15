@@ -249,7 +249,7 @@ namespace dci
     float* output = (float*)malloc(tempCB * sizeof(float));
 
     // store only one cluster
-    dci::RegisterUtils::SetAllBits<1>(clusters, N, S);
+    dci::RegisterUtils::setAllBits<1>(clusters, N, S);
     cluster_sizes[0] = NA; // just one NA-sized cluster
 
     // invoke kernel for whole system
@@ -272,7 +272,7 @@ namespace dci
       dci::ClusterUtils::getComplementaryClusterMask(cur_cluster + S, cur_cluster, N);
 
       // get cluster size
-      unsigned int temp_r = dci::RegisterUtils::GetNumberOf<1>(clusters_vec[i], NA);
+      unsigned int temp_r = dci::RegisterUtils::getNumberOf<1>(clusters_vec[i], NA);
 
       // 2 clusters (original and complementary)
       cluster_sizes[C++] = temp_r;
@@ -496,7 +496,7 @@ namespace dci
     {
       mutual_information_mask = (register_t*)malloc(sample_size_bytes);
       memset((void*)mutual_information_mask, 0, sample_size_bytes);
-      dci::RegisterUtils::SetAllBits<true>(mutual_information_mask, N, S);
+      dci::RegisterUtils::setAllBits<true>(mutual_information_mask, N, S);
     }
 
     dci::ClusterUtils::setMutualInformationMask(mutual_information_mask);
@@ -826,7 +826,7 @@ namespace dci
     if (!IsFullComputation) total_clusters = conf->hs_count * (NA - 2);
 
     // store only one cluster
-    dci::RegisterUtils::SetAllBits<1>(clusters, N, S);
+    dci::RegisterUtils::setAllBits<1>(clusters, N, S);
     cluster_sizes[0] = NA; // just one NA-sized cluster
     unsigned int old_HB = HB, new_HB;
 
@@ -1024,7 +1024,7 @@ clock_t start = clock();
 //unsigned int clusterToCheck = 127;
 
 // store only one cluster
-dci::RegisterUtils::SetAllBits<1>(clusters, N, S);
+dci::RegisterUtils::setAllBits<1>(clusters, N, S);
 cluster_sizes[0] = NA; // just one NA-sized cluster
 unsigned int old_HB = HB, new_HB;
 
@@ -1063,7 +1063,7 @@ for (int r = 1; r <= limit; r++) // cluster size
 
     // 2 clusters (original and complementary)
     cluster_sizes[C++] = r;
-    cluster_sizes[C++] = dci::RegisterUtils::GetNumberOf<1>(cur_cluster + S, N) ? (NA - r) : 0;
+    cluster_sizes[C++] = dci::RegisterUtils::getNumberOf<1>(cur_cluster + S, N) ? (NA - r) : 0;
 
     // if we have stored enough clusters for a batch, or if we have reached the end of current group
     if (C == CB || (r == limit && !has_next))
@@ -2085,7 +2085,7 @@ void Application::printSystemDataToStream(ostream& out, register_t* data)
   for (int row = 0; row != M; ++row)
   {
     for (int col = 0; col != N; ++col)
-    out << dci::RegisterUtils::GetBitAtPos(data, col);
+    out << dci::RegisterUtils::getBitAtPos(data, col);
     out << '\n';
     data += S;
   }
@@ -2135,7 +2135,7 @@ void Application::generateHomogeneousSystem()
     register_t* sample = hsystem_data + row * S;
 
     // reset sample
-    dci::RegisterUtils::SetAllBits<0>(sample, N, S);
+    dci::RegisterUtils::setAllBits<0>(sample, N, S);
 
     // for each agent
     for (unsigned int a = 0; a != NA; ++a)
@@ -2161,7 +2161,7 @@ void Application::generateHomogeneousSystem()
 inline void Application::printCluster(const register_t* cluster)
 {
   for (unsigned int i = 0; i!= N; ++i)
-  if (dci::RegisterUtils::GetBitAtPos(cluster, i))
+  if (dci::RegisterUtils::getBitAtPos(cluster, i))
   cout << '[' << i << ']';
 }
 
@@ -2171,8 +2171,8 @@ inline void Application::printCluster(const register_t* cluster)
 inline void Application::printClusterValue(const register_t* cluster, const register_t* value)
 {
   for (unsigned int i = 0; i!= N; ++i)
-  if (dci::RegisterUtils::GetBitAtPos(cluster, i))
-  cout << dci::RegisterUtils::GetBitAtPos(value, i);
+  if (dci::RegisterUtils::getBitAtPos(cluster, i))
+  cout << dci::RegisterUtils::getBitAtPos(value, i);
   else
   cout << 'x';
 }
@@ -2266,7 +2266,7 @@ void Application::printAgentCluster(const dci::ClusterDescriptor& cluster, ostre
   for (unsigned int a = 0; a != NA; ++a)
   {
     // Check number of 1s
-    bool agent_check = dci::RegisterUtils::GetBitAtPos(temp, a);
+    bool agent_check = dci::RegisterUtils::getBitAtPos(temp, a);
 
     // check output format
     if (tab_format)
@@ -2290,7 +2290,7 @@ string Application::getOriginalAgentClusterName(const dci::ClusterDescriptor& cl
 
   // cycle all agents that compose the cluster
   for (unsigned int a = 0; a != NO; ++a)
-  if (dci::RegisterUtils::GetBitAtPos(temp, a))
+  if (dci::RegisterUtils::getBitAtPos(temp, a))
   {
     // update name, size and composition
     if (name.length()) name += '+';
@@ -2510,8 +2510,8 @@ register_t* Application::getOriginalAgentMaskFromCluster(const register_t* clust
   register_t* temp_and = (register_t*)malloc(S * BYTES_PER_REG);
 
   // reset registers
-  dci::RegisterUtils::SetAllBits<0>(output, NO ? NO : NA, NO ? SO : SA);
-  dci::RegisterUtils::SetAllBits<0>(temp_and, N, S);
+  dci::RegisterUtils::setAllBits<0>(output, NO ? NO : NA, NO ? SO : SA);
+  dci::RegisterUtils::setAllBits<0>(temp_and, N, S);
 
   // build mask from starting agents
   for (unsigned int a = 0; a != NA; ++a)
@@ -2520,13 +2520,13 @@ register_t* Application::getOriginalAgentMaskFromCluster(const register_t* clust
     dci::RegisterUtils::reg_and(temp_and, cluster, agent_pool + S * a, S);
 
     // count 1s
-    if (dci::RegisterUtils::GetNumberOf<1>(temp_and, N) > 0)
+    if (dci::RegisterUtils::getNumberOf<1>(temp_and, N) > 0)
     {
       // check if an original system is defined
       if (NO)
       dci::RegisterUtils::reg_or(output, starting_agent_pool + a * SO, SO);
       else
-      dci::RegisterUtils::SetBitAtPos(output, a, 1);
+      dci::RegisterUtils::setBitAtPos(output, a, 1);
     }
   }
 
@@ -2547,8 +2547,8 @@ register_t* Application::getCurrentAgentMaskFromCluster(const register_t* cluste
   register_t* temp_and = (register_t*)malloc(S * BYTES_PER_REG);
 
   // reset registers
-  dci::RegisterUtils::SetAllBits<0>(output, NA, SA);
-  dci::RegisterUtils::SetAllBits<0>(temp_and, N, S);
+  dci::RegisterUtils::setAllBits<0>(output, NA, SA);
+  dci::RegisterUtils::setAllBits<0>(temp_and, N, S);
 
   // build mask from starting agents
   for (unsigned int a = 0; a != NA; ++a)
@@ -2557,8 +2557,8 @@ register_t* Application::getCurrentAgentMaskFromCluster(const register_t* cluste
     dci::RegisterUtils::reg_and(temp_and, cluster, agent_pool + S * a, S);
 
     // count 1s
-    if (dci::RegisterUtils::GetNumberOf<1>(temp_and, N) > 0)
-    dci::RegisterUtils::SetBitAtPos(output, a, 1);
+    if (dci::RegisterUtils::getNumberOf<1>(temp_and, N) > 0)
+    dci::RegisterUtils::setBitAtPos(output, a, 1);
   }
 
   // free temp data
@@ -2586,12 +2586,12 @@ void Application::pushFullClusterInfo(const register_t* cluster_orig, vector<str
 
   // cycle all agents that compose the cluster
   for (unsigned int a = 0; a != ref_na; ++a)
-  if (dci::RegisterUtils::GetBitAtPos(cluster_orig, a))
+  if (dci::RegisterUtils::getBitAtPos(cluster_orig, a))
   {
     // update name, size and composition
     if (name.length()) name += '+';
     name += getAgentName(a, NO ? starting_agent_names : agent_names);
-    size += dci::RegisterUtils::GetNumberOf<1>(ref_agent_pool + a * ref_s, ref_n);
+    size += dci::RegisterUtils::getNumberOf<1>(ref_agent_pool + a * ref_s, ref_n);
     comp->push_back(a);
     rep[a] = '1';
   }
@@ -2618,7 +2618,7 @@ void Application::pushMissingAgentInfo(const unsigned int& a, vector<string>& te
   // push back all info
   temp_agent_comp.emplace_back(1, a);
   temp_agent_names.push_back(getAgentName(a, NO ? starting_agent_names : agent_names));
-  temp_agent_sizes.push_back(dci::RegisterUtils::GetNumberOf<1>(ref_agent_pool + a * ref_s, ref_n));
+  temp_agent_sizes.push_back(dci::RegisterUtils::getNumberOf<1>(ref_agent_pool + a * ref_s, ref_n));
   temp_agent_rep.push_back(rep);
 }
 
@@ -2698,7 +2698,7 @@ void Application::writeSystemToFileAfterSieving(const unique_ptr<vector<dci::Clu
   register_t* temp_or = (register_t*)malloc(ref_SA * BYTES_PER_REG);
 
   // reset temp mask
-  dci::RegisterUtils::SetAllBits<0>(temp_or, NA, SA);
+  dci::RegisterUtils::setAllBits<0>(temp_or, NA, SA);
 
   // cycle new super clusters
   for (unsigned int i = 0; i != num_super_clusters; ++i)
@@ -2721,14 +2721,14 @@ void Application::writeSystemToFileAfterSieving(const unique_ptr<vector<dci::Clu
   }
 
   // now we have to add missing agents
-  unsigned int missing_agents = dci::RegisterUtils::GetNumberOf<0>(temp_or, ref_NA);
+  unsigned int missing_agents = dci::RegisterUtils::getNumberOf<0>(temp_or, ref_NA);
 
   // if there are missing agents, resize new agent pool
   if (missing_agents)
   {
     // now create new agents (size 1, one for each missing agent)
     for (unsigned int i = 0; i != ref_NA; ++i)
-    if (!dci::RegisterUtils::GetBitAtPos(temp_or, i))
+    if (!dci::RegisterUtils::getBitAtPos(temp_or, i))
     {
       // push back agent info
       pushMissingAgentInfo(i, temp_agent_names, temp_agent_rep, temp_agent_sizes, temp_agent_comp);
@@ -2805,8 +2805,8 @@ void Application::writeSystemToFileAfterSieving(const unique_ptr<vector<dci::Clu
       // iterate all sub-agents
       for (unsigned int k = 0; k != temp_agent_comp[j].size(); ++k)
       for (unsigned int l = 0; l != ref_N; ++l)
-      if (dci::RegisterUtils::GetBitAtPos(ref_agent_pool + ref_S * temp_agent_comp[j][k], l))
-      out << (dci::RegisterUtils::GetBitAtPos(cur_sample, l) ? '1' : '0');
+      if (dci::RegisterUtils::getBitAtPos(ref_agent_pool + ref_S * temp_agent_comp[j][k], l))
+      out << (dci::RegisterUtils::getBitAtPos(cur_sample, l) ? '1' : '0');
     }
 
     // separator
@@ -2852,7 +2852,7 @@ string Application::getAgentName(unsigned int a)
 inline void Application::printBitmask(const register_t* mask, const unsigned int n, ostream& out)
 {
   for (unsigned int i = 0; i != n; ++i)
-  out << (dci::RegisterUtils::GetBitAtPos(mask, i) ? '1' : '0');
+  out << (dci::RegisterUtils::getBitAtPos(mask, i) ? '1' : '0');
 }
 
 /*

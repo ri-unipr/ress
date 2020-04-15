@@ -43,7 +43,7 @@ const register_t* ClusterDescriptor::getClusterMask() const
 
 register_t* ClusterDescriptor::cloneClusterMask() const
 {
-  unsigned int n_regs = dci::RegisterUtils::GetNumberOfRegsFromNumberOfBits(m_n);
+  unsigned int n_regs = dci::RegisterUtils::getNumberOfRegsFromNumberOfBits(m_n);
   register_t* mask = new register_t[n_regs];
   memcpy(mask, m_clusterMask, n_regs * BYTES_PER_REG);
   return mask;
@@ -81,7 +81,7 @@ ClusterDescriptor& ClusterDescriptor::operator=(const ClusterDescriptor& other)
 void ClusterDescriptor::init(const register_t* clusterMask, const unsigned int& N, const float& IND)
 {
   m_n = N;
-  unsigned int n_regs = dci::RegisterUtils::GetNumberOfRegsFromNumberOfBits(N);
+  unsigned int n_regs = dci::RegisterUtils::getNumberOfRegsFromNumberOfBits(N);
   m_clusterMask = new register_t[n_regs];
   if (m_clusterMask) memcpy(m_clusterMask, clusterMask, n_regs * BYTES_PER_REG);
   m_ind = IND;

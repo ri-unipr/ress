@@ -81,7 +81,7 @@ namespace dci
       last_reg_mask = ~((register_t)0);
       unsigned int start = n % BITS_PER_REG;
       if (!start) return;  // BUG FIX
-      for (unsigned int i = start; i != BITS_PER_REG; ++i) dci::RegisterUtils::SetBitAtPos(&last_reg_mask, i, 0);
+      for (unsigned int i = start; i != BITS_PER_REG; ++i) dci::RegisterUtils::setBitAtPos(&last_reg_mask, i, 0);
     }
 
 
@@ -90,9 +90,9 @@ namespace dci
     */
     void clusterBitmaskFromAgentCluster(register_t* cluster, const register_t* agent_cluster, const unsigned int& N, const unsigned int& S, const unsigned int& NA, register_t* agent_pool)
     {
-      dci::RegisterUtils::SetAllBits<0>(cluster, N, S);
+      dci::RegisterUtils::setAllBits<0>(cluster, N, S);
       for (unsigned int i = 0; i != NA; ++i)
-      if (dci::RegisterUtils::GetBitAtPos(agent_cluster, i))
+      if (dci::RegisterUtils::getBitAtPos(agent_cluster, i))
       dci::RegisterUtils::reg_or(cluster, agent_pool + i * S, S);
     }
 
@@ -101,7 +101,7 @@ namespace dci
     */
     void clusterBitmaskFromString(const string& bitmask_str, register_t* bitmask_reg)
     {
-      dci::RegisterUtils::SetAllBits<0>(bitmask_reg, current_s * BITS_PER_REG, current_s);
+      dci::RegisterUtils::setAllBits<0>(bitmask_reg, current_s * BITS_PER_REG, current_s);
       for (unsigned int i = 0; i != current_n; ++i)
       if (bitmask_str[i])
       dci::RegisterUtils::reg_or(bitmask_reg, cur_agent_pool + i * current_s, current_s);
@@ -141,17 +141,17 @@ namespace dci
     */
     void getComplementaryClusterMask(register_t* dest, const register_t* source, const unsigned int& n)
     {
-      for (unsigned int i = 0; i != dci::RegisterUtils::GetNumberOfRegsFromNumberOfBits(n); ++i)
+      for (unsigned int i = 0; i != dci::RegisterUtils::getNumberOfRegsFromNumberOfBits(n); ++i)
       dest[i] = ~source[i]; // bitwise invert
       // apply mutual information mask
-      dci::RegisterUtils::reg_and(dest, dest, mi_mask, dci::RegisterUtils::GetNumberOfRegsFromNumberOfBits(n));
-      dest[dci::RegisterUtils::GetNumberOfRegsFromNumberOfBits(n) - 1] &= last_reg_mask; // reset extra trailing bits to zero
+      dci::RegisterUtils::reg_and(dest, dest, mi_mask, dci::RegisterUtils::getNumberOfRegsFromNumberOfBits(n));
+      dest[dci::RegisterUtils::getNumberOfRegsFromNumberOfBits(n) - 1] &= last_reg_mask; // reset extra trailing bits to zero
     }
 
     void print(ostream& out, register_t* cluster, const unsigned int& N)
     {
       for (unsigned int i = 0; i != N; ++i)
-      out << dci::RegisterUtils::GetBitAtPos(cluster, i);
+      out << dci::RegisterUtils::getBitAtPos(cluster, i);
     }
 
     void println(ostream& out, register_t* cluster, const unsigned int& N)
@@ -162,9 +162,9 @@ namespace dci
 
     void setClusterFromPosArray(register_t* cluster, const vector<unsigned int>& positions, const unsigned int& N)
     {
-      dci::RegisterUtils::SetAllBits<0>(cluster, N, dci::RegisterUtils::GetNumberOfRegsFromNumberOfBits(N));
+      dci::RegisterUtils::setAllBits<0>(cluster, N, dci::RegisterUtils::getNumberOfRegsFromNumberOfBits(N));
       for (unsigned int i = 0; i != positions.size(); ++i)
-      dci::RegisterUtils::SetBitAtPos(cluster, positions[i], 1);
+      dci::RegisterUtils::setBitAtPos(cluster, positions[i], 1);
     }
 
   }
