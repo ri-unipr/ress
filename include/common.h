@@ -1,14 +1,8 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
-/* 
+/*
  * File:   common.h
- * Author: e.vicari
+ * Author: Emilio Vicari, Michele Amoretti
  *
- * Created on 2 marzo 2016, 10.52
  */
 
 #ifndef COMMON_H
@@ -25,7 +19,7 @@
 #define SELECTION_BITMASK ((register_t)1)
 #define MAX_SYSTEM_SIZE BITS_PER_REG
 
-static void HandleError( cudaError_t err,
+static void handleError( cudaError_t err,
                          const char *file,
                          int line ) {
     if (err != cudaSuccess) {
@@ -35,7 +29,7 @@ static void HandleError( cudaError_t err,
     }
 }
 
-#define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
+#define HANDLE_ERROR( err ) (handleError( err, __FILE__, __LINE__ ))
 #define HANDLE_NULL( a ) {if (a == NULL) { \
                             printf( "Host memory failed in %s at line %d\n", \
                                     __FILE__, __LINE__ ); \
@@ -43,5 +37,3 @@ static void HandleError( cudaError_t err,
 
 
 #endif /* COMMON_H */
-
-

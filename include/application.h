@@ -389,7 +389,7 @@ namespace dci
     if (conf->silent) conf->verbose = false;
 
     // collect system parameters
-    dci::FileUtils::CollectSystemParameters(conf->input_file_name, N, M, S, L, NA, SA, NO, SO, NBO, SBO, has_mi_mask);
+    dci::FileUtils::collectSystemParameters(conf->input_file_name, N, M, S, L, NA, SA, NO, SO, NBO, SBO, has_mi_mask);
 
     // check sample size
     if (N > BITS_PER_REG * 32)
@@ -441,7 +441,7 @@ namespace dci
     // TODO check for available device memory
 
     // print device info if necessary
-    if (conf->show_device_stats) dci::CUDAUtils::PrintDeviceInfo();
+    if (conf->show_device_stats) dci::CUDAUtils::printDeviceInfo();
 
     //size_t mem_free = 0, mem_total = 0;
     //cudaMemGetInfo(&mem_free, &mem_total);
@@ -480,7 +480,7 @@ namespace dci
 
     prev = clock();
     // load system data
-    dci::FileUtils::LoadSystemData(conf->input_file_name, N, M, S, SA, SO, SBO, NA, NO, NBO, system_data, original_system_data, agent_pool, original_agent_pool, starting_agent_pool, implicit_agents, agent_names, starting_agent_names, has_mi_mask, mutual_information_mask);
+    dci::FileUtils::loadSystemData(conf->input_file_name, N, M, S, SA, SO, SBO, NA, NO, NBO, system_data, original_system_data, agent_pool, original_agent_pool, starting_agent_pool, implicit_agents, agent_names, starting_agent_names, has_mi_mask, mutual_information_mask);
     tuneFunction("LoadSystemData", clock() - prev); prev = clock();
 
     // adjust mutual information mask
@@ -624,7 +624,7 @@ namespace dci
       if (conf->hs_input_file_name != "")
       {
         verbose_cout << "Loading homogeneous system stats from file: " << conf->hs_input_file_name << '\n';
-        dci::FileUtils::LoadSystemStats(conf->hs_input_file_name, NA, hsystem_stats);
+        dci::FileUtils::loadSystemStats(conf->hs_input_file_name, NA, hsystem_stats);
       }
       else // generate it
       {
@@ -637,7 +637,7 @@ namespace dci
         hsystem_data = (register_t*)malloc(system_size_bytes);
 
         if (conf->hs_data_input_file_name != "")
-        dci::FileUtils::LoadRawSystemData(conf->hs_data_input_file_name, hsystem_data, N, M, S);
+        dci::FileUtils::loadRawSystemData(conf->hs_data_input_file_name, hsystem_data, N, M, S);
         else
         {
           verbose_cout << "Generating homogeneous system from uSystem stats with seed = " << conf->rand_seed << '\n';
@@ -647,7 +647,7 @@ namespace dci
 
         // save h. system to file if specified
         if (conf->hs_data_output_file_name != "")
-        dci::FileUtils::SaveSystemData(conf->hs_data_output_file_name, hsystem_data, N, M, S);
+        dci::FileUtils::saveSystemData(conf->hs_data_output_file_name, hsystem_data, N, M, S);
 
         verbose_cout << "Computing homogeneous system statistics\n";
 
