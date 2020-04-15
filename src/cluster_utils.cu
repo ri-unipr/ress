@@ -2,7 +2,6 @@
 /*
 * File:   cluster_utils.cu
 * Author: Emilio Vicari, Michele Amoretti
-*
 */
 
 #include <iostream>
@@ -14,8 +13,6 @@
 #include "cluster_utils.h"
 
 using namespace std;
-//using namespace dci;
-//using namespace ClusterUtils;
 
 namespace dci
 {

@@ -2,7 +2,6 @@
 /*
 * File:   cluster_descriptor.h
 * Author: Emilio Vicari, Michele Amoretti
-*
 */
 
 #ifndef CLUSTER_DESCRIPTOR_H

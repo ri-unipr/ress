@@ -1,8 +1,7 @@
 
 /*
 * File:   register_utils.h
-* Author: e.vicari
-*
+* Author: Emilio Vicari, Michele Amoretti
 */
 
 #ifndef REGISTER_UTILS_H
@@ -310,7 +309,7 @@ namespace dci
     { dest[0] = source[0]; dest[1] = source[1]; }
     template<> __host__ __device__ inline bool equal<2>(const register_t* a, const register_t* b)
     { return a[0] == b[0] && a[1] == b[1]; }
-    
+
     /*
     * Template specializations for R = 3
     */

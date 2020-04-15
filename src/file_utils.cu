@@ -1,9 +1,7 @@
 
 /*
 * File:   file_utils.cu
-* Author: e.vicari
-*
-* Created on 1 marzo 2016, 17.53
+* Author: Emilio Vicari, Michele Amoretti
 */
 
 

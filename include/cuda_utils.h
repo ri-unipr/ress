@@ -1,14 +1,7 @@
-/*
-* To change this license header, choose License Headers in Project Properties.
-* To change this template file, choose Tools | Templates
-* and open the template in the editor.
-*/
 
 /*
 * File:   cuda_utils.h
-* Author: e.vicari
-*
-* Created on 2 marzo 2016, 10.52
+* Author: Emilio Vicari, Michele Amoretti
 */
 
 #ifndef CUDA_UTILS_H
@@ -58,7 +51,7 @@ namespace dci
         cout << endl;
       }
     }
-  
+
   }
 }
 

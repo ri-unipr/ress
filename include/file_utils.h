@@ -1,9 +1,7 @@
 
 /*
 * File:   file_utils.h
-* Author: e.vicari
-*
-* Created on 1 marzo 2016, 17.53
+* Author: Emilio Vicari, Michele Amoretti
 */
 
 #ifndef FILE_UTILS_H
@@ -70,6 +68,6 @@ namespace dci
     void loadRawSystemData(const string& filename, register_t* system_data, const unsigned int& N, const unsigned int& M, const unsigned int& S);
 
   }
-  
+
 }
 #endif /* FILE_UTILS_H */

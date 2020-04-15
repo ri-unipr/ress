@@ -1,10 +1,8 @@
-//
-//  kmpso.cu
-//
-//  Created by Gianluigi Silvestri on 5/12/2016.
-//  Updated by Michele Amoretti on 29/3/2020.
-//  Copyright © 2020 University of Parma. All rights reserved.
-//
+
+/*
+* File:   kmpso.cu
+* Author: Gianluigi Silvestri, Michele Amoretti, Stefano Cagnoni
+*/
 
 #include <iostream>
 #include <cmath>
@@ -25,13 +23,6 @@ using  namespace  std;
 #define	S_max 10000 // Max swarm size
 #define K_max 3000 //Max number of clusters
 
-
-// Sub-programs
-//void identify_niches();
-//void k_means();
-//double alea( double a, double b);
-//vector<float> perf(int S, int D); // Fitness evaluation
-//void update();
 
 // Global variables
 double pi; // Useful for some test functions
@@ -123,7 +114,6 @@ vector<float> perf(int S, int D)
   }
 
   // perform computation
-  //app->ComputeStatisticalIndex(clusters, output);
   app->ComputeIndex(clusters, output);
 
   for (int s=0;s<S; s++)
@@ -507,11 +497,7 @@ int main(int argc, const char * argv[]) {
   // set configuration parameters
   configuration.input_file_name = argv[10];
   string output_file = argv[11];
-  // SC  configuration.input_file_name = argv[9];
-  // SC  string output_file = argv[10];
   configuration.rand_seed = hseed;
-  // SC  configuration.rand_seed = 123456;
-  //configuration.hs_count=10000;
   string chosen_index = argv[12];
   if (chosen_index.compare("tc") == 0)
   configuration.tc_index = true;
@@ -534,9 +520,7 @@ int main(int argc, const char * argv[]) {
 
   //-----------------------INITIALIZATION
   setup_kernel <<< NB,TPB >>> ( devStates, (unsigned long) rseed );
-  // SC setup_kernel <<< NB,TPB >>> ( devStates, static_cast<unsigned int>(time(NULL)));
   srand(rseed);
-  // SC  srand( static_cast<unsigned int>(time(NULL)));
 
   for ( s = 0; s < S; s++ ) // create S particles
   {
@@ -636,14 +620,10 @@ int main(int argc, const char * argv[]) {
     std::ofstream outfile;
     std::ofstream outfile2;
 
-    //outfile.open("dati_sistemi/sistema_test.txt", std::ios_base::app);
-    //outfile.open("risultati/risultato_1.txt", std::ios_base::app);
     outfile.open(output_file, std::ios_base::app);
-    //outfile2.open("dati_sistemi/sistema_test2.txt", std::ios_base::app);
 
     int var_count = 0;
     if(t%interv==0 || t==T-1){
-      //for(int u=N-1; u>=0;u--) {
       for(int u=0; u<N;u++) {
         for (d=0; d<g[u].size(); d++) {
           for (int i=var_count; i<g[u][d]; i++)
@@ -651,7 +631,6 @@ int main(int argc, const char * argv[]) {
           outfile << "1" << "\t";
           var_count = g[u][d]+1;
           outfile2 <<"["<< g[u][d] << "]";
-          //outfile <<"["<< g[u][d] << "]";
         }
         while (var_count < D) {
           outfile << "0" << "\t";
@@ -659,7 +638,6 @@ int main(int argc, const char * argv[]) {
         }
         outfile << results[u]<< "\n";
         outfile2 << results[u]<< "\n";
-        //cout <<" " << results[u]<< "\n";
         var_count = 0;
       }
 

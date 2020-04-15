@@ -1,8 +1,7 @@
 
 /*
-* File:   dci_kernels.h
-* Author: e.vicari, m.amoretti
-*
+* File:   kmpso_kernels.h
+* Author: Emilio Vicari, Michele Amoretti
 */
 
 #ifndef KMPSO_KERNELS_H

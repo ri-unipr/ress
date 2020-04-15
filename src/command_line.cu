@@ -1,12 +1,7 @@
 
 /*
-* File:   command_line.h
-* Author: e.vicari
-*
-* Created on 1 marzo 2016, 12.13
-*
-* Utilities for command line parsing
-*
+* File:   command_line.cu
+* Author: Emilio Vicari, Michele Amoretti
 */
 
 #include <string>

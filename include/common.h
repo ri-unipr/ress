@@ -2,15 +2,12 @@
 /*
  * File:   common.h
  * Author: Emilio Vicari, Michele Amoretti
- *
  */
 
 #ifndef COMMON_H
 #define COMMON_H
 
 #include <stdio.h>
-
-// parallel architecture constants
 
 // defines for bitwise operations
 #define register_t unsigned int

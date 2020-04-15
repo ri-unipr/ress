@@ -1,8 +1,7 @@
 
 /*
 * File:   dci_kernels.h
-* Author: e.vicari
-*
+* Author: Emilio Vicari, Laura Sani, Michele Amoretti
 */
 
 #ifndef DCI_KERNELS_H
@@ -556,77 +555,47 @@ template<unsigned int S, bool ComputeZI,bool ComputeSI,bool ComputeSI_2, bool Hi
         //unsigned int cardinality = powf(2,SP.N/SP.NA); // SP.N/SP.NA=number of bit per random variable -> cardinality is 2^(num. of bit)
         unsigned int cardinality=3;
 
-        //LAURA
-        /* unsigned int dim_Ts=1;
-        unsigned int s_dim_Tj=0;
+        // exemple: if X is encoded with 2 bits then I can have: 00,01,10,11 -> 2^2 = 4 possible values. If I have 3 bits then 2^3 = 8 values.
+        // The DoF formula is: [Prod_i(card_i)-1] - [sum_i(card_i-1)] where prod and sum goes from 1 to number of elements in the cluster.
+        //assuming all the RV to have same cardinality it becomes:
+        float gval= powf(cardinality,cluster_sizes[i]) -1 - cluster_sizes[i] * (cardinality -1); // DoF
+        output[i]=(float)((2*SP.M*integration - gval) / sqrtf(2*gval));
+      }
+
+      if (ComputeSI)  // SI = 2nI/g
+      {
+        //float gval= powf(2,cluster_sizes[i]) -1 - cluster_sizes[i]; // DoF
+
+        //cardinality of the alphabet of a single random variable:
+        //unsigned int cardinality = powf(2,SP.N/SP.NA); // SP.N/SP.NA=number of bit per random variable -> cardinality is 2^(num. of bit)
+        unsigned int cardinality=3;
+        // exemple: if X is encoded with 2 bits then I can have: 00,01,10,11 -> 2^2 = 4 possible values. If I have 3 bits then 2^3 = 8 values.
+        // The DoF formula is: [Prod_i(card_i)-1] - [sum_i(card_i-1)] where prod and sum goes from 1 to number of elements in the cluster.
+        //assuming all the RV to have same cardinality it becomes:
+        float gval= powf(cardinality,cluster_sizes[i]) -1 - cluster_sizes[i] * (cardinality -1); // DoF
+
+        output[i]=(float)((2*SP.M*integration) /gval);
+      }
+
+      if (ComputeSI_2) // SI2= I/Imax
+      {
+        float min_entropy = 100;
+        //float min_entropy = FLT_MAX;
+
+        float sum_entropies=0;
 
         for (unsigned int v = 0; v != SP.N; ++v)
-        if (dci::RegisterUtils::GetBitAtPos(cur_cluster, v))
         {
-        unsigned int card_var=1;
-        unsigned int vv=v;
-
-        //entropy stored only in first agent variable
-        while(system_entropies[vv]==0.0f)
-        {
-        card_var++;
-        vv++;
-      }
-
-      if(card_var!=1)
-      {
-      dim_Ts=dim_Ts*card_var;
-      s_dim_Tj=s_dim_Tj+card_var-1;
-      v=vv-1;
-    }
-  }
-
-  dim_Ts=dim_Ts-1;
-  float gval=(float) dim_Ts-s_dim_Tj;
-
-  */
-
-      // exemple: if X is encoded with 2 bits then I can have: 00,01,10,11 -> 2^2 = 4 possible values. If I have 3 bits then 2^3 = 8 values.
-      // The DoF formula is: [Prod_i(card_i)-1] - [sum_i(card_i-1)] where prod and sum goes from 1 to number of elements in the cluster.
-      //assuming all the RV to have same cardinality it becomes:
-      float gval= powf(cardinality,cluster_sizes[i]) -1 - cluster_sizes[i] * (cardinality -1); // DoF
-      output[i]=(float)((2*SP.M*integration - gval) / sqrtf(2*gval));
-    }
-
-    if (ComputeSI)  // SI = 2nI/g
-    {
-      //float gval= powf(2,cluster_sizes[i]) -1 - cluster_sizes[i]; // DoF
-
-      //cardinality of the alphabet of a single random variable:
-      //unsigned int cardinality = powf(2,SP.N/SP.NA); // SP.N/SP.NA=number of bit per random variable -> cardinality is 2^(num. of bit)
-      unsigned int cardinality=3;
-      // exemple: if X is encoded with 2 bits then I can have: 00,01,10,11 -> 2^2 = 4 possible values. If I have 3 bits then 2^3 = 8 values.
-      // The DoF formula is: [Prod_i(card_i)-1] - [sum_i(card_i-1)] where prod and sum goes from 1 to number of elements in the cluster.
-      //assuming all the RV to have same cardinality it becomes:
-      float gval= powf(cardinality,cluster_sizes[i]) -1 - cluster_sizes[i] * (cardinality -1); // DoF
-
-      output[i]=(float)((2*SP.M*integration) /gval);
-    }
-
-    if (ComputeSI_2) // SI2= I/Imax
-    {
-      float min_entropy = 100;
-      //float min_entropy = FLT_MAX;
-
-      float sum_entropies=0;
-
-      for (unsigned int v = 0; v != SP.N; ++v)
-      {
-        if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
-        {
-          // search the minimum entropy in the cluster
-          min_entropy = ((min_entropy < system_entropies[v]) ? min_entropy : system_entropies[v]);
-          sum_entropies = sum_entropies +  system_entropies[v]; // sum of the entropies in the cluster
+          if (dci::RegisterUtils::getBitAtPos(cur_cluster, v))
+          {
+            // search the minimum entropy in the cluster
+            min_entropy = ((min_entropy < system_entropies[v]) ? min_entropy : system_entropies[v]);
+            sum_entropies = sum_entropies +  system_entropies[v]; // sum of the entropies in the cluster
+          }
         }
+        output[i]=  integration/(sum_entropies - min_entropy);
       }
-      output[i]=  integration/(sum_entropies - min_entropy);
     }
   }
-}
 
 #endif /* DCI_KERNELS_H */

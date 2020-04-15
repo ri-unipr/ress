@@ -1,6 +1,6 @@
 
 /*
-* File:   cluster_descriptor.h
+* File:   application.h
 * Authors: Emilio Vicari, Michele Amoretti, Laura Sani
 */
 
@@ -2746,7 +2746,7 @@ namespace dci
       // set new size
       HB = new_HB;
       params.L = HB;
-      
+
       // allocate data according to new size
       HANDLE_ERROR( cudaMalloc( (void**)&dev_histogram, CB * HB * sample_size_bytes ) );
       HANDLE_ERROR( cudaMalloc( (void**)&dev_frequencies, CB * HB * sizeof(unsigned int) ) );

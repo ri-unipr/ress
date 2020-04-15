@@ -1,15 +1,8 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 /*
- * File:   stat_utils.h
- * Author: e.vicari
- *
- * Created on 2 marzo 2016, 10.52
- */
+* File:   stat_utils.h
+* Author: Emilio Vicari, Michele Amoretti
+*/
 
 #ifndef STAT_UTILS_H
 #define STAT_UTILS_H
