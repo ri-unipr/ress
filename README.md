@@ -15,7 +15,7 @@ To test dci, enter the scripts folder and run:
 
 Python 3 is assumed to be installed.
 
-To test kmpso, enter the scripts7 folder and run:
+To test kmpso, enter the scripts folder and run:
 
 * ./tc-kmpso-test.sh 
 * ./zi-kmpso-test.sh
