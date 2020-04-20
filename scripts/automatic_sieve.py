@@ -3,27 +3,27 @@ import re
 import sys
 import time
 
-#PARAMETRI DCI
+#DCI PARAMETERS
 
-#numero variabili (sistema di partenza)
+#number of variables (starting system)
 NA=16;
-#numero di bit per variabile (sistema di partenza)
+#number of bits per variable (starting system
 NB=2;
 
 
-#PARAMETRI SETACCIO
+#SIEVE PARAMETERS
 
-#nomi variabili (sistema di origine)
+#variable names (source system)
 #CSTR
 var_names=["A","AA","AAA","AAAA","AAAB","AAB","AABBA","AB","ABA","ABBBBA","B","BA","BAA","BAAB","BBB","BBBABA"]
 #var_names=["A","B","AA","AB","BA","BB","C","CA","CB","AC","BC","CC","D","DA","DB","DADB","AAB","BAB","AABB","CCA","CBAC","BCCC"]
 
 
 
-#file sistema di origine: codifica variabili
+#source system file: variable encoding
 forig_var_bit= "systems/CSTR20_00_var_bit.txt"
 
-#file sistema di origine: dati
+#source file system: data
 forig_data= "systems/CSTR20_00_dati.txt"
 
 directory_input_file="system_data/"
@@ -33,15 +33,15 @@ directory_output="results/"
 
 
 
-#PARAMETRI SISTEMA OMOGENEO
+#HOMOGENEOUS SYSTEM PARAMETERS
 arg_seed="--rand-seed:"
 seed="123456"
 arg_seed+=seed
 
 start_time = time.time()
 
-#SALVATAGGIO NUMERO DI BIT PER OGNI VARIABILE
-#leggo numero di bit per variabile sistema originale
+#SAVING THE BIT NUMBER FOR EACH VARIABLE
+#reading the number of bits per original system variable
 with open(forig_var_bit) as f:
     lines = f.readlines()
 
@@ -60,9 +60,9 @@ if len(orig_var_bit_list)!=NA:
 	sys.exit()
 
 
-#GENERAZIONE RIGA DI INTESTAZIONE FILE SETACCIO
+#GENERATION OF THE SIEVE FILE HEADING LINE
 
-#intestazione codifica binaria variabili
+#header of binary coding variables
 intestazione_var_bin=""
 
 for i in range(0,NA):
@@ -76,7 +76,7 @@ for i in range(0,NA):
 
 	intestazione_var_bin+=" "
 
-#rimuovo l'ultimo spazio
+#removal of the last space
 intestazione_var_bin=intestazione_var_bin[:-1]
 
 print(intestazione_var_bin)
@@ -85,7 +85,7 @@ print(intestazione_var_bin)
 
 #sys.exit()
 
-#CICLO ESECUZIONE DCI + SETACCIO
+#DCI EXECUTION CYCLE PLUS SIEVE
 
 zI_index=3;
 iterazione=0;
@@ -99,7 +99,7 @@ while (zI_index >=3 and num_var>2):
 
 	print("\n\nITERAZIONE "+str(iterazione)+"\n\n")
 
-	#ESECUZIONE C++
+	#EXECUTION IN C ++
 	input_file="system_"+str(iterazione-1)+".txt"
 	arg_input_file=directory_input_file+input_file
 	print(arg_input_file)
@@ -129,13 +129,13 @@ while (zI_index >=3 and num_var>2):
 
 
 
-	#LETTURA FILE OUTPUT
+	#READING FILE OUTPUT
 
 	fout=directory_output+output_file
 	with open(fout) as f:
 		lines = f.readlines()
 
-	#nomi variabili
+	#variable names
 	nomi_variabili=lines[0]
 	#nomi_variabili=nomi_variabili.replace("\n", "")
 	nomi_variabili=nomi_variabili.replace("\t", " ")
@@ -143,27 +143,27 @@ while (zI_index >=3 and num_var>2):
 	print(nomi_variabili)
 
 	if(iterazione==1): #1
-		#rimuovo ultimo elemento: "zI"
+		#removal of the last element: "zI"
 		nomi_variabili=nomi_variabili[:-1]
 	else:
-		#rimuovo ultimi 2 elementi: "zI", "comp"
+		#removal of the last 2 elements: "zI", "comp"
 		nomi_variabili=nomi_variabili[:-2]
 
 	print(nomi_variabili)
 	nomi_variabili=' '.join(nomi_variabili)
 	print(nomi_variabili)
 
-	#primo gruppo
+	#first group
 	gruppo=lines[1]
 	gruppo=gruppo.replace("\t", " ")
 	gruppo=re.split(' ',gruppo)
 	print(gruppo)
 	if(iterazione==1): #1
-		#rimuovo ultimo elemento: "zI"
+		#removal of the last element: "zI"
 		zI_index=float(gruppo[-1])
 		gruppo=gruppo[:-1]
 	else:
-		#rimuovo ultimi 2 elementi: "zI", "comp"
+		#removal of the last 2 elements: "zI", "comp"
 		zI_index=float(gruppo[-2])
 		gruppo=gruppo[:-2]
 	print(gruppo)
@@ -172,9 +172,9 @@ while (zI_index >=3 and num_var>2):
 
 	print("\nzI: "+str(zI_index)+"\n")
 
-	#GENERAZIONE NUOVE VARIABILI
+	#NEW VARIABLES GENERATION
 
-	#file nuove_variabili
+	#new_variable files
 	foutname = "variables/variables_"+str(iterazione)+".txt"
 
 	nomi_list=re.split(' ',nomi_variabili)
@@ -193,7 +193,7 @@ while (zI_index >=3 and num_var>2):
 
 	nuove_variabili_list=[]
 
-	#nuovo gruppo al primo posto
+	#new group in first place
 	nuove_variabili_list.append("")
 	#print(nuove_variabili_list)
 
@@ -225,20 +225,20 @@ while (zI_index >=3 and num_var>2):
 	out_file.close()
 
 
-	#GENERAZIONE NUOVO SISTEMA
+	#NEW SYSTEM GENERATION
 	new_names=nuove_variabili_list[:]
 	print(new_names)
 
-	# Scrive un file.
+	# Writing a file.
 	fnew="system_data/system_"+str(iterazione)+".txt"
 	out_file = open(fnew,"w")
 
-	#lunghezza vettore nuove variabili
+	#length of the vector of the new variables
 	new_names_len=len(new_names)
-	#lunghezza vettore variabili sistema di origine (NA)
+	#length of the vector variables of the origin system(NA)
 	orig_var_names_len=len(var_names)
 
-	#generazione intestazione
+	#header generation
 	intestazione="%% "+' '.join(new_names)+" %% "+' '.join(var_names)+" %% "+intestazione_var_bin
 	out_file.write(intestazione)
 	#print(new_names)
@@ -247,7 +247,7 @@ while (zI_index >=3 and num_var>2):
 	out_file.write("\n")
 
 	for i in range(0,new_names_len):
-		#descrizione bit variabili nuove
+		#description of the bits of the new variables
 		for j in range(0,new_names_len):
 			if '+' in new_names[j]:
 					variables=new_names[j].split('+')
@@ -266,7 +266,7 @@ while (zI_index >=3 and num_var>2):
 					for n_bit in range(0,NB):
 						out_file.write("0")
 		out_file.write(" %% ")
-		#mappatura variabili vecchie-variabili nuove
+		#mapping of old variables into new variables
 		for j in range(0,orig_var_names_len):
 			if '+' in new_names[i]:
 				variables=new_names[i].split('+')
@@ -290,7 +290,7 @@ while (zI_index >=3 and num_var>2):
 	out_file.write("%%\n")
 
 
-	#lettura dati sistema originale
+	#reading the original system data
 	with open(forig_data) as f:
 		lines = f.readlines()
 
@@ -303,16 +303,16 @@ while (zI_index >=3 and num_var>2):
 
 	#print(type(data_list[0]))
 
-	#numero campioni
+	#number of samples
 	data_len=len(data_list)
 	print(data_len)
 
 	#print(data_list[1][1])
 
-	#generazione dati ordinati
+	#generation of ordered data
 	for i in range(0,data_len):
 	#for i in range(0,1):
-		#dati nuovo ordine (setaccio)
+		#new order data (sieve)
 		for j in range(0,new_names_len):
 			if '+' in new_names[j]:
 				variables=new_names[j].split('+')
@@ -331,7 +331,7 @@ while (zI_index >=3 and num_var>2):
 					out_file.write(data_list[i][var_names.index(new_names[j])*NB+n_bit])
 					#print("\n")
 		out_file.write(" %% ")
-		#dati originali
+		#original data
 		out_file.write(data_list[i])
 		out_file.write("\n")
 
