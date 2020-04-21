@@ -110,7 +110,12 @@ while (zI_index >=3 and num_var>2):
 
 	#args = ("./dci", arg_input_file, arg_seed, arg_output, "--silent")
 	#args = ("./dci", arg_input_file, arg_seed, arg_output,"--hs-count:100000")
-	args = ("../bin/dci", arg_input_file, arg_output)
+	#args = ("../bin/dci", arg_input_file, arg_output)
+	if (num_var <= 12):
+		args = ("../bin/dci", arg_input_file, "--out:"+arg_output)
+	else:
+		args_kmpso = str(num_var) + "2000 1 3 501 20 100 50 123456"
+		args = ("../bin/kmpso", args_kmpso, arg_input_file, arg_output, "zi")	
 
 	#args = ("dci_15_02_2018/dci", arg_input_file, arg_seed, arg_output)
 	#Or just:
