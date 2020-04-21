@@ -22,6 +22,10 @@ To test dci and kmpso, enter the scripts folder and run:
 
 Python 3 is assumed to be installed.
 
+The following parameters must be defined and passed as arguments to dci:
+* path/to/inputfile
+* --out:path/to/outputfile
+
 The following paramaters must be defined and passed as arguments to kmpso:
 * D = search space dimension
 * S = swarm size  
@@ -32,7 +36,7 @@ The following paramaters must be defined and passed as arguments to kmpso:
 * interv = print_interv  
 * N = number of reported results
 * rseed = seed for the pseudorandom number generator
-* inputfile
-* outputfile
+* path/to/inputfile
+* path/to/outputfile
 * index = either zi or tc
 * hseed = optional seed for the generation of the homogeneous system; if not set, hseed = rseed
