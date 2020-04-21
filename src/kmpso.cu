@@ -456,7 +456,7 @@ int main(int argc, const char * argv[]) {
     interv=atoi(argv[7]);
     N=atoi(argv[8]);
     rseed = (unsigned int) atoi(argv[9]);
-    if (argc == 14) {hseed = (int) atoi(argv[12]);}
+    if (argc == 14) {hseed = (int) atoi(argv[13]);}
     else {hseed = (int)rseed;}
   }
 

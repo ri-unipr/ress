@@ -9,15 +9,30 @@ On Linux machines:
 * make dci
 * make kmpso
 
-To test dci, enter the scripts folder and run:
+To test kmpso, enter the scripts folder and run:
+
+* ./tc-kmpso-test.sh
+* ./zi-kmpso-test.sh
+
+The first test uses the Tc index, while the second test uses the ZI index.
+
+To test dci and kmpso, enter the scripts folder and run:
 
 * python automatic_sieve.py
 
 Python 3 is assumed to be installed.
 
-To test kmpso, enter the scripts folder and run:
-
-* ./tc-kmpso-test.sh 
-* ./zi-kmpso-test.sh
-
-The first test uses the Tc index, while the second test uses the ZI index.
+The following paramaters must be defined and passed as arguments to kmpso:
+* D = search space dimension
+* S = swarm size  
+* K = number of seeds  
+* x = range  
+* T = number of iterations
+* c1 = kmeans interval
+* interv = print_interv  
+* N = number of reported results
+* rseed = seed for the pseudorandom number generator
+* inputfile
+* outputfile
+* index = either zi or tc
+* hseed = optional seed for the generation of the homogeneous system; if not set, hseed = rseed
