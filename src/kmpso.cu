@@ -438,10 +438,11 @@ int main(int argc, const char * argv[]) {
   int interv; // print interval
 
   pi = acos( -1 ); // for rastrigin function
-  if (argc < 13)
-  // SC if (argc < 10)      Mandatory parameters are 12 + the program name
+
+ if (argc < 15)
+  // SC if (argc < 10)      Mandatory parameters are 14 + the program name
   { // We expect 5 arguments: the program name, the source path and the destination path
-    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results seed inputfile outputfile zi/tc [h_seed]" << endl;
+    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results seed inputfile outputfile zi/tc var_string comp_on [h_seed]" << endl;
     // SC    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results inputfile outputfile" << endl;
     return 1;
   }
@@ -456,7 +457,8 @@ int main(int argc, const char * argv[]) {
     interv=atoi(argv[7]);
     N=atoi(argv[8]);
     rseed = (unsigned int) atoi(argv[9]);
-    if (argc == 14) {hseed = (int) atoi(argv[13]);}
+    if (argc ==16) {hseed = (int) atoi(argv[15]);}
+//  SC    if (argc == 14) {hseed = (int) atoi(argv[13]);}
     else {hseed = (int)rseed;}
   }
 
@@ -616,28 +618,35 @@ int main(int argc, const char * argv[]) {
       identify_niches();
     }
 
+
+// SC Separato l'output su video (???) e quello su file
     //PRINT ON SCREEN
-    std::ofstream outfile;
     std::ofstream outfile2;
 
-    outfile.open(output_file, std::ios_base::app);
-
+    
     int var_count = 0;
     if(t%interv==0 || t==T-1){
+//  SC Aggiunta per stampare l'intestazione del file risultati
       for(int u=0; u<N;u++) {
         for (d=0; d<g[u].size(); d++) {
           for (int i=var_count; i<g[u][d]; i++)
-          outfile << "0" << "\t";
-          outfile << "1" << "\t";
           var_count = g[u][d]+1;
           outfile2 <<"["<< g[u][d] << "]";
         }
         while (var_count < D) {
-          outfile << "0" << "\t";
           var_count++;
         }
-        outfile << results[u]<< "\n";
+// SC	outfile << results[u]<< "\n";
+// SC   outfile2 << results[u]<< "\n";
+       if(atoi(argv[14])==0)
+       {
         outfile2 << results[u]<< "\n";
+       }
+// SC Stampa per ora una X poi dovrà stampare la variabili composte       
+       else       
+       {
+        outfile2 << results[u]<< "\tX\n";
+       }
         var_count = 0;
       }
 
@@ -645,8 +654,51 @@ int main(int argc, const char * argv[]) {
       cout << "Time taken: " << (double)(clock() - tStart)/CLOCKS_PER_SEC << "s\n";
       cout <<"------------------------\n\n";
     }
+
+   //PRINT ON FILE
+
+  if(t==T-1)
+  {
+    std::ofstream outfile;
+
+    outfile.open(output_file, std::ios_base::app);
+    
+    int var_count = 0;
+//  SC Aggiunta per stampare l'intestazione del file risultati
+if(atoi(argv[14])==0 && strlen(argv[13])>1) {outfile << argv[13] << "\t" << argv[12] << "\n";}
+    else if (strlen(argv[13])>1)
+            {outfile << argv[13] << "\t" << argv[12] << "\tComp\n";}
+    
+      for(int u=0; u<N;u++) {
+        for (d=0; d<g[u].size(); d++) {
+          for (int i=var_count; i<g[u][d]; i++)
+          outfile << "0" << "\t";
+          outfile << "1" << "\t";
+          var_count = g[u][d]+1;
+        }
+        while (var_count < D) {
+          outfile << "0" << "\t";
+          var_count++;
+        }
+// SC	outfile << results[u]<< "\n";
+// SC   outfile2 << results[u]<< "\n";
+       if(atoi(argv[14])==0)
+       {
+	outfile << results[u]<< "\n";
+       }
+// SC Stampa per ora una X poi dovrà stampare la variabili composte       
+       else       
+       {
+ 	outfile << results[u]<< "\tX\n";
+       }
+        var_count = 0;
+      }
     outfile.close();
-    outfile2.close();
+ 
+    }
+
+
+   outfile2.close();
 
   }
   // delete app object
