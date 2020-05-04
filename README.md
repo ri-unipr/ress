@@ -9,10 +9,10 @@ On Linux machines:
 * make dci
 * make kmpso
 
-To test kmpso, enter the scripts folder and run:
+To test kmpso, enter the scripts folder and run the following scripts:
 
-* ./tc-kmpso-test.sh
-* ./zi-kmpso-test.sh
+* tc-kmpso-test.sh
+* zi-kmpso-test.sh
 
 The first test uses the Tc index, while the second test uses the ZI index.
 
