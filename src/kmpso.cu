@@ -4,6 +4,9 @@
 * Author: Gianluigi Silvestri, Michele Amoretti, Stefano Cagnoni
 */
 
+// SC aggiunto per usare calloc
+#include <stdlib.h>
+
 #include <iostream>
 #include <cmath>
 #include <numeric>
@@ -67,7 +70,6 @@ vector <double> results;
 vector < vector<unsigned int> > g;
 int r1, r2;
 int b;
-
 
 double alea( double a, double b )
 { // random number (uniform distribution) in [a b]
@@ -436,6 +438,10 @@ int main(int argc, const char * argv[]) {
   int s; // Rank of the current particle
   int c1; // intervals for identify niches
   int interv; // print interval
+// SC aggiunti per parsing stringa variabili
+  char **tokens;
+  char *sptr;
+  int i, *vars;
 
   pi = acos( -1 ); // for rastrigin function
 
@@ -448,7 +454,33 @@ int main(int argc, const char * argv[]) {
   }
   else
   {
+
     D =atoi(argv[1]); // Search space dimension
+    
+// SC aggiunta allocazione vettore di stringhe (nomi variabili)
+
+    if(strlen(argv[13])>0)
+    {
+	tokens = (char**) calloc(D,sizeof(char*));
+	for (i=0; i<D; i++){
+	  tokens[i] = (char *) malloc((strlen(argv[13])+2)*sizeof(char));
+	  }
+    }
+
+vars=(int *) malloc(D*sizeof(int));
+sptr = (char *) malloc (strlen(argv[13])*sizeof(char));
+strcpy(sptr, argv[13]);
+
+//SC aggiunto parsing stringa variabili
+    tokens[0]=strtok((char *) argv[13]," ");
+//debug    cout << tokens[0] << " ";
+    for (i=1; i<D; i++){
+    tokens[i]=strtok(NULL," ");
+//debug    cout << tokens[i] << " ";
+    }
+//debug    cout << "\n\n";
+
+
     S=atoi(argv[2]);
     K=atoi(argv[3]);
     x=atof(argv[4]);
@@ -627,32 +659,63 @@ int main(int argc, const char * argv[]) {
     int var_count = 0;
     if(t%interv==0 || t==T-1){
 //  SC Aggiunta per stampare l'intestazione del file risultati
-      for(int u=0; u<N;u++) {
+  
+if(strlen(sptr)>1)
+{
+ for(i=0;i<D;i++)
+  outfile2 << tokens[i] << "\t";
+  
+if(atoi(argv[14])==0)
+ outfile2 << argv[12] << "\n";
+    else
+ outfile2 << argv[12] << "\tComp\n";
+} 
+
+    for(int u=0; u<N;u++) {
+        for(i=0;i<D;i++) vars[i]=-1;
+        int vcount=0;
         for (d=0; d<g[u].size(); d++) {
-          for (int i=var_count; i<g[u][d]; i++)
+          for (i=var_count; i<g[u][d]; i++){
+            outfile2 << "0" << "\t";
+//debug    cout << "0" << "\t";	    	    
+	    }
+          outfile2 << "1" << "\t";
+//debug	  cout << "1" << "\t";
+	  vars[vcount]=i;
           var_count = g[u][d]+1;
-          outfile2 <<"["<< g[u][d] << "]";
+	  vcount=vcount+1;
         }
         while (var_count < D) {
+          outfile2 << "0" << "\t";
+//debug	  cout << "0" << "\t";
           var_count++;
         }
+
+//debug        i=0;
+//debug	while (vars[i]>=0) {cout << tokens[vars[i]] << " ";i++;}
+//debug        cout << "\n";
+
 // SC	outfile << results[u]<< "\n";
 // SC   outfile2 << results[u]<< "\n";
+
        if(atoi(argv[14])==0)
        {
-        outfile2 << results[u]<< "\n";
+	outfile2 << results[u]<< "\n";
        }
-// SC Stampa per ora una X poi dovrà stampare la variabili composte       
        else       
        {
-        outfile2 << results[u]<< "\tX\n";
+	outfile2 << results[u]<< "\t";
+        int  nv=0;
+       while (vars[nv]>=0) nv++;
+       for(i=0;i<nv-1;i++) outfile2 << tokens[vars[i]] << "+";
+       outfile2 << tokens[vars[nv-1]] << "\n";
        }
         var_count = 0;
       }
-
       cout << "fitness computed " << fitness << " times\n";
       cout << "Time taken: " << (double)(clock() - tStart)/CLOCKS_PER_SEC << "s\n";
       cout <<"------------------------\n\n";
+
     }
 
    //PRINT ON FILE
@@ -663,38 +726,70 @@ int main(int argc, const char * argv[]) {
 
     outfile.open(output_file, std::ios_base::app);
     
-    int var_count = 0;
-//  SC Aggiunta per stampare l'intestazione del file risultati
-if(atoi(argv[14])==0 && strlen(argv[13])>1) {outfile << argv[13] << "\t" << argv[12] << "\n";}
-    else if (strlen(argv[13])>1)
-            {outfile << argv[13] << "\t" << argv[12] << "\tComp\n";}
+    var_count = 0;
     
+//  SC Aggiunta per stampare l'intestazione del file risultati
+  
+if(strlen(sptr)>1)
+{
+ for(i=0;i<D;i++){
+  outfile << tokens[i] << "\t";
+//debug cout << tokens[i] << "\t";
+  }
+  
+if(atoi(argv[14])==0)
+ {outfile << argv[12] << "\n";
+//debug  cout  << argv[12] << "\n";
+  }
+    else
+ {outfile << argv[12] << "\tComp\n";
+//debug cout <<  argv[12] << "\tComp\n";
+}
+
+} 
       for(int u=0; u<N;u++) {
+        for(i=0;i<D;i++) vars[i]=-1;
+        int vcount=0;
         for (d=0; d<g[u].size(); d++) {
-          for (int i=var_count; i<g[u][d]; i++)
-          outfile << "0" << "\t";
+          for (i=var_count; i<g[u][d]; i++){
+            outfile << "0" << "\t";
+//debug    cout << "0" << "\t";	    	    
+	    }
           outfile << "1" << "\t";
+//debug	  cout << "1" << "\t";
+	  vars[vcount]=i;
           var_count = g[u][d]+1;
+	  vcount=vcount+1;
         }
         while (var_count < D) {
           outfile << "0" << "\t";
+//debug	  cout << "0" << "\t";
           var_count++;
         }
+
+//debug        i=0;
+//debug	while (vars[i]>=0) {cout << tokens[vars[i]] << " ";i++;}
+//debug        cout << "\n";
+
 // SC	outfile << results[u]<< "\n";
 // SC   outfile2 << results[u]<< "\n";
+
        if(atoi(argv[14])==0)
        {
 	outfile << results[u]<< "\n";
        }
-// SC Stampa per ora una X poi dovrà stampare la variabili composte       
+// SC Stampa le variabili composte       
        else       
        {
- 	outfile << results[u]<< "\tX\n";
+	outfile << results[u]<< "\t";
+        int  nv=0;
+       while (vars[nv]>=0) nv++;
+       for(i=0;i<nv-1;i++) outfile << tokens[vars[i]] << "+";
+       outfile << tokens[vars[nv-1]] << "\n";
        }
         var_count = 0;
       }
     outfile.close();
- 
     }
 
 
@@ -712,3 +807,8 @@ if(atoi(argv[14])==0 && strlen(argv[13])>1) {outfile << argv[13] << "\t" << argv
 
   return 0;
 }
+
+
+
+
+

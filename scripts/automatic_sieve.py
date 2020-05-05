@@ -20,7 +20,7 @@ variables=["A","AA","AAA","AAAA","AAAB","AAB","AABBA","AB","ABA","ABBBBA","B","B
 
 var_string=""
 for i in range(0,NA-1):
-    var_string+=variables[i]+"\t"
+    var_string+=variables[i]+" "
 var_string+=variables[NA-1]
 
 #source system file: variable encoding
@@ -118,9 +118,9 @@ while (index >=3 and num_var>2):
 
     ## TODO: stampare header variabili
         if (num_var > 18):
-            args = ("../bin/dci", arg_input_file, "--tc", "--out:"+arg_output)
+            args = ("../bin/dci", arg_input_file, "--zi", "--out:"+arg_output)
         else:
-            args = ("../bin/kmpso", str(num_var), "2000", "1", "3", "501", "20", "100", "50", "123456", arg_input_file, arg_output, "tc", var_string, str(flag_init))
+            args = ("../bin/kmpso", str(num_var), "2000", "1", "3", "501", "20", "100", "50", "123456", arg_input_file, arg_output, "zi", var_string, str(flag_init))
 
         print(args)
         popen = subprocess.Popen(args)
@@ -212,7 +212,7 @@ while (index >=3 and num_var>2):
 
         for i in range(0,len(new_variables_list)-1):
             out_file.write(str(new_variables_list[i])+" ")
-            var_string+=str(new_variables_list[i])+"\t"
+            var_string+=str(new_variables_list[i])+" "
         var_string+=str(new_variables_list[len(new_variables_list)-1])
 
         out_file.write("\n")
