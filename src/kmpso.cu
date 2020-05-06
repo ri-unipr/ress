@@ -448,7 +448,7 @@ int main(int argc, const char * argv[]) {
  if (argc < 15)
   // SC if (argc < 10)      Mandatory parameters are 14 + the program name
   { // We expect 5 arguments: the program name, the source path and the destination path
-    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results seed inputfile outputfile zi/tc var_string comp_on [h_seed]" << endl;
+    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results seed inputfile outputfile zi/tc var_string comp_on hsfile [h_seed]" << endl;
     // SC    cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results inputfile outputfile" << endl;
     return 1;
   }
@@ -456,7 +456,7 @@ int main(int argc, const char * argv[]) {
   {
 
     D =atoi(argv[1]); // Search space dimension
-    
+
 // SC aggiunta allocazione vettore di stringhe (nomi variabili)
 
     if(strlen(argv[13])>0)
@@ -489,7 +489,7 @@ strcpy(sptr, argv[13]);
     interv=atoi(argv[7]);
     N=atoi(argv[8]);
     rseed = (unsigned int) atoi(argv[9]);
-    if (argc ==16) {hseed = (int) atoi(argv[15]);}
+    if (argc == 17) {hseed = (int) atoi(argv[16]);}
 //  SC    if (argc == 14) {hseed = (int) atoi(argv[13]);}
     else {hseed = (int)rseed;}
   }
@@ -538,7 +538,7 @@ strcpy(sptr, argv[13]);
   else if (chosen_index.compare("zi") == 0)
   configuration.zi_index = true;
   //configuration.hs_input_file_name = "";
-  configuration.hs_output_file_name = "";
+  configuration.hs_output_file_name = argv[15];
 
   // create application object
   app = new dci::Application(configuration);
@@ -655,21 +655,21 @@ strcpy(sptr, argv[13]);
     //PRINT ON SCREEN
     std::ofstream outfile2;
 
-    
+
     int var_count = 0;
     if(t%interv==0 || t==T-1){
 //  SC Aggiunta per stampare l'intestazione del file risultati
-  
+
 if(strlen(sptr)>1)
 {
  for(i=0;i<D;i++)
   outfile2 << tokens[i] << "\t";
-  
+
 if(atoi(argv[14])==0)
  outfile2 << argv[12] << "\n";
     else
  outfile2 << argv[12] << "\tComp\n";
-} 
+}
 
     for(int u=0; u<N;u++) {
         for(i=0;i<D;i++) vars[i]=-1;
@@ -677,7 +677,7 @@ if(atoi(argv[14])==0)
         for (d=0; d<g[u].size(); d++) {
           for (i=var_count; i<g[u][d]; i++){
             outfile2 << "0" << "\t";
-//debug    cout << "0" << "\t";	    	    
+//debug    cout << "0" << "\t";
 	    }
           outfile2 << "1" << "\t";
 //debug	  cout << "1" << "\t";
@@ -702,7 +702,7 @@ if(atoi(argv[14])==0)
        {
 	outfile2 << results[u]<< "\n";
        }
-       else       
+       else
        {
 	outfile2 << results[u]<< "\t";
         int  nv=0;
@@ -725,18 +725,18 @@ if(atoi(argv[14])==0)
     std::ofstream outfile;
 
     outfile.open(output_file, std::ios_base::app);
-    
+
     var_count = 0;
-    
+
 //  SC Aggiunta per stampare l'intestazione del file risultati
-  
+
 if(strlen(sptr)>1)
 {
  for(i=0;i<D;i++){
   outfile << tokens[i] << "\t";
 //debug cout << tokens[i] << "\t";
   }
-  
+
 if(atoi(argv[14])==0)
  {outfile << argv[12] << "\n";
 //debug  cout  << argv[12] << "\n";
@@ -746,14 +746,14 @@ if(atoi(argv[14])==0)
 //debug cout <<  argv[12] << "\tComp\n";
 }
 
-} 
+}
       for(int u=0; u<N;u++) {
         for(i=0;i<D;i++) vars[i]=-1;
         int vcount=0;
         for (d=0; d<g[u].size(); d++) {
           for (i=var_count; i<g[u][d]; i++){
             outfile << "0" << "\t";
-//debug    cout << "0" << "\t";	    	    
+//debug    cout << "0" << "\t";
 	    }
           outfile << "1" << "\t";
 //debug	  cout << "1" << "\t";
@@ -778,8 +778,8 @@ if(atoi(argv[14])==0)
        {
 	outfile << results[u]<< "\n";
        }
-// SC Stampa le variabili composte       
-       else       
+// SC Stampa le variabili composte
+       else
        {
 	outfile << results[u]<< "\t";
         int  nv=0;
@@ -807,8 +807,3 @@ if(atoi(argv[14])==0)
 
   return 0;
 }
-
-
-
-
-
