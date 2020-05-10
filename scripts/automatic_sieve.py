@@ -117,16 +117,10 @@ while (index >=3 and num_var>2):
         arg_output=directory_output+output_file
 
     ## TODO: stampare header variabili
-        if (iteration == 1):
-            if (num_var < 18):
-                args = ("../bin/dci", arg_input_file, "--rand-seed:123456", "--hs-in:homostats.txt", "--tc", "--out:"+arg_output)
-            else:
-                args = ("../bin/kmpso", str(num_var), "2000", "1", "3", "501", "20", "100", "50", "123456", arg_input_file, arg_output, "tc", var_string, str(flag_init), "homostats.txt")
+        if (num_var < 12):
+            args = ("../bin/dci", arg_input_file, "--rand-seed:123456", "--tc", "--out:"+arg_output)
         else:
-            if (num_var < 18):
-                args = ("../bin/dci", arg_input_file, "--rand-seed:123456", "--tc", "--out:"+arg_output)
-            else:
-                args = ("../bin/kmpso", str(num_var), "2000", "1", "3", "501", "20", "100", "50", "123456", arg_input_file, arg_output, "tc", var_string, str(flag_init), "")
+            args = ("../bin/kmpso", str(num_var), "2000", "1", "3", "501", "20", "100", "50", "123456", arg_input_file, arg_output, "tc", var_string, str(flag_init), "")
 
         print(args)
         popen = subprocess.Popen(args)
