@@ -7,4 +7,6 @@ cd ..
 cd results
 rm *
 cd ..
-
+cd variables
+rm *
+cd ..
