@@ -9,6 +9,7 @@ CC = nvcc
 DCIFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -O2 -I $(IDIR)
 QUERYFLAGS = -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -I $(CUDADIR) -I $(IDIR)
 KMPSOFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -O2 -I $(IDIR)
+TESTFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -O2 -I $(IDIR)
 
 _CLUSTDESCRDEPS = cluster_descriptor.h
 CLUSTDESCRDEPS = $(patsubst %,$(IDIR)/%,$(_CLUSTDESCRDEPS))
@@ -47,6 +48,10 @@ QUERYOBJ = device_query.o
 _KMPSOSRC = kmpso.cu
 KMPSOSRC = $(patsubst %,$(SDIR)/%,$(_KMPSOSRC))
 KMPSOOBJ = kmpso.o
+
+_TESTSRC = dci_test.cu
+TESTSRC = $(patsubst %,$(SDIR)/%,$(_TESTSRC))
+TESTOBJ = dci_test.o
 
 $(CLUSTDESCROBJ): $(CLUSTDESCRSRC) $(CLUSTDESCRDEPS)
 	$(CC) -c -o $@ $< $(DCIFLAGS)
@@ -90,6 +95,17 @@ kmpso: $(CLUSTDESCROBJ) $(CLUSTUTILSOBJ) $(FILEUTILSOBJ) $(KMPSOOBJ)
 	rm $(CLUSTDESCROBJ)
 	rm $(CLUSTUTILSOBJ)
 	rm $(FILEUTILSOBJ)
+
+$(TESTOBJ): $(TESTSRC) $(DCIDEPS)
+	$(CC) -c -o $@ $< $(TESTFLAGS)
+
+dcitest: $(CLUSTDESCROBJ) $(CLUSTUTILSOBJ) $(FILEUTILSOBJ) $(TESTOBJ)
+	$(CC) -o $@ $^ $(TESTFLAGS)
+	mv $@ $(BDIR)
+	rm $(TESTOBJ)
+	rm $(CLUSTDESCROBJ)
+	rm $(CLUSTUTILSOBJ)
+	rm $(FILEUTILSOBJ)	
 
 clean:
 	rm $(BDIR)/*
