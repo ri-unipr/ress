@@ -281,7 +281,7 @@ namespace dci
           //callKernel<false,false,true,false>(C, clusters, cluster_sizes, output);
           callKernelCard<false,false,true,false>(C, clusters, cluster_sizes, output, cardinalities);
         }
-        if ( conf->zi_index == false && conf->strength_index == false && conf->strength2_index == false)
+        if ( conf->tc_index == false && conf->zi_index == false && conf->strength_index == false && conf->strength2_index == false)
         {
           conf->zi_index=true; // pick zi as default
 
