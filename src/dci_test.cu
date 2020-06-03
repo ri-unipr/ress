@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     dci::RunInfo configuration = dci::RunInfo();
 
     // set configuration parameters
-	  configuration.input_file_name = "../scripts/systems/cstr_26.txt"; 
+	  configuration.input_file_name = "../scripts/systems/cstr_26.txt";
     configuration.rand_seed = 123456;
 
     //configuration.hs_output_file_name = "../scripts/hs-kmpso-1.txt";
@@ -53,23 +53,26 @@ int main(int argc, char** argv) {
     // ********************************************************************* //
 
     // allocate memory for clusters
-    vector<register_t*> clusters(2);
+    vector<register_t*> clusters(3);
 
     // allocate memory for cluster indexes
-    vector<float> output(2);
+    vector<float> output(3);
 
     // create agent list for clusters
 
     vector<unsigned int> cluster1 = { 15, 18 };
     vector<unsigned int> cluster2 = { 6, 7, 13, 16, 25 };
+    vector<unsigned int> cluster3 = { 13, 23 };
 
     // allocate cluster bitmasks
     clusters[0] = (register_t*)malloc(app->getAgentSizeInBytes());
     clusters[1] = (register_t*)malloc(app->getAgentSizeInBytes());
+    clusters[2] = (register_t*)malloc(app->getAgentSizeInBytes());
 
     // set bitmasks from agent lists
     dci::ClusterUtils::setClusterFromPosArray(clusters[0], cluster1, app->getNumberOfAgents());
     dci::ClusterUtils::setClusterFromPosArray(clusters[1], cluster2, app->getNumberOfAgents());
+    dci::ClusterUtils::setClusterFromPosArray(clusters[2], cluster3, app->getNumberOfAgents());
 
     // perform computation
     app->ComputeIndex(clusters, output);
@@ -79,10 +82,13 @@ int main(int argc, char** argv) {
     cout << " --> " << output[0] << endl;
     dci::ClusterUtils::print(cout, clusters[1], app->getNumberOfAgents());
     cout << " --> " << output[1] << endl;
+    dci::ClusterUtils::print(cout, clusters[2], app->getNumberOfAgents());
+    cout << " --> " << output[2] << endl;
 
     // free memory
     free(clusters[0]);
     free(clusters[1]);
+    free(clusters[2]);
 
 
     // ********************************************************************* //

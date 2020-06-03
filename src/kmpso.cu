@@ -539,7 +539,7 @@ strcpy(sptr, argv[13]);
   configuration.zi_index = true;
   //configuration.hs_input_file_name = "";
   if (chosen_index.compare("tc") == 0)
-  configuration.hs_output_file_name = argv[15];
+  configuration.hs_input_file_name = argv[15];
 
   // create application object
   app = new dci::Application(configuration);
