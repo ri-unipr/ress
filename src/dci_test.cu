@@ -32,10 +32,10 @@ int main(int argc, char** argv) {
     // set configuration parameters
 	  configuration.input_file_name = "../scripts/systems/cstr_26.txt";
     configuration.rand_seed = 123456;
-    configuration.tc_index = true;
+    configuration.zi_index = true;
 
     //configuration.hs_output_file_name = "../scripts/hs-kmpso-1.txt";
-    configuration.hs_input_file_name = "../scripts/hs-dci-26var.txt";
+    configuration.hs_input_file_name = "../scripts/hsfile-26-20200604.txt";
 
 
     //configuration.hs_count=100000;
