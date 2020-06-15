@@ -584,8 +584,18 @@ namespace dci
     }
 
     verbose_cout<<"Cardinalities:\n";
+    bool cardflag = false;
     for (unsigned int a = 0; a != NA; ++a)
-    verbose_cout<<cardinalities[a]<<"\n";
+    {
+      verbose_cout<<cardinalities[a]<<"\n";
+      if (cardinalities[a] == 1)
+        cardflag = true;
+    }
+    if (cardflag)
+    {
+      cout << "Input error: at least one variable has always the same value (remove it!)." << endl;
+      exit(0);
+    }
 
     if (conf->tc_index == true)
     {
