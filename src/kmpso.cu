@@ -456,7 +456,7 @@
     std::cout << "--outputfile            path to the output file\n";
     std::cout << "--hsfile                path to the output file\n";
     std::cout << "--var_string            list of variable names (ordered like in the input file)\n";
-    std::cout << "--comp_on:number        ? (0 = no | 1 = yes | default 0)\n";
+    std::cout << "--comp_on:number        show each group composition in  output file (0 = no | 1 = yes | default 0)\n";
     std::cout << "\n";
   }
 
@@ -561,20 +561,24 @@
 
     }
 
+    /*
     if ((configuration.tc_index == true) && (configuration.hs_input_file_name == ""))
     {
       cerr << "You have to pass an homogeneous system file with --hsfile." << endl;
       return 1;
     }
     else
+    */
     configuration.good_config = true;
 
+    /*
     if (!configuration.good_config) // bad command line parameters, print error and usage
     {
       cout << "Error: " << configuration.error_message << "\n\n";
       printUsage(argv[0]);
       return 1;
     }
+    */
 
     //cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results seed inputfile outputfile zi/tc var_string comp_on hsfile [h_seed]" << endl;
 
