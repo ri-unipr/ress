@@ -491,6 +491,7 @@
     configuration.input_file_name = "./system_data/system_0.txt";
     string output_file = "./output-tc-kmpso-16var.txt";
     configuration.hs_input_file_name = "";
+    configuration.hs_output_file_name = "";
     string chosen_index = "zi";
     configuration.tc_index = false;
     configuration.zi_index = true;
@@ -551,8 +552,10 @@
         configuration.input_file_name = value;
         else if (name == "--outputfile")
         output_file = value;
-        else if (name == "--hsfile")
+        else if (name == "--hsinputfile")
         configuration.hs_input_file_name = value;
+        else if (name == "--hsoutputfile")
+        configuration.hs_output_file_name = value;
         else if (name == "--var_string")
         var_string = value;
         else if (name == "--comp_on")
@@ -561,26 +564,14 @@
 
     }
 
-    /*
+
     if ((configuration.tc_index == true) && (configuration.hs_input_file_name == ""))
     {
-      cerr << "You have to pass an homogeneous system file with --hsfile." << endl;
-      return 1;
+      if (configuration.hs_output_file_name == "")
+        configuration.hs_output_file_name = "hsfile.txt";
     }
-    else
-    */
+
     configuration.good_config = true;
-
-    /*
-    if (!configuration.good_config) // bad command line parameters, print error and usage
-    {
-      cout << "Error: " << configuration.error_message << "\n\n";
-      printUsage(argv[0]);
-      return 1;
-    }
-    */
-
-    //cerr << "Usage: dimension swarm_size  n_seeds  range  n_iterations kmeans_interv print_interv  N_results seed inputfile outputfile zi/tc var_string comp_on hsfile [h_seed]" << endl;
 
     if(strlen(var_string.data())>0)
     {
