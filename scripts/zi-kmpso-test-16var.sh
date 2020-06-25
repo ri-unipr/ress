@@ -1,1 +1,1 @@
-../bin/kmpso 16 2000 1 3 501 20 100 100 123456 ./system_data/system_0.txt output-zi-kmpso-16var.txt zi "A AA AAA AAAA AAAB AAB AABBA AB ABA ABBBBA B BA BAA BAAB BB BBBABA" 0
+../bin/kmpso --dimension:16 --swarm_size:2000 --n_seeds:1 --range:3 --n_iterations:501 --kmeans_interv:20 --print_interv:100 --N_results:100 --rseed:123456 --inputfile:./system_data/system_0.txt --outputfile:output-zi-kmpso-16var.txt --zi --var_string:"A AA AAA AAAA AAAB AAB AABBA AB ABA ABBBBA B BA BAA BAAB BB BBBABA" --comp_on:0
