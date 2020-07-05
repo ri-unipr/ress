@@ -2010,8 +2010,10 @@ namespace dci
     */
     void Application::printSystemStatsToStream(ostream& out, const float* stats)
     {
-      for (int col = 0; col != N; ++col)
-      out << stats[2 * col] << endl << stats[2 * col + 1] << endl;
+      //for (int col = 0; col != N; ++col)
+      for (int r = 2; r <= NA - 1; r++) // cluster size
+      //out << stats[2 * col] << endl << stats[2 * col + 1] << endl;
+      out << stats[2*r-2] << endl << stats[2*r-1] << endl;
     }
 
     /*
