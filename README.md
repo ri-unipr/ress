@@ -14,20 +14,20 @@ To test dci, enter the scripts folder and run:
 * sh tc-dci-test-16var.sh
 * sh zi-dci-test-16var.sh
 
-The first test uses the Tc index, while the second test uses the ZI index.
+The first test uses the Tc index, while the second test uses the zI index.
 
 To test kmpso, enter the scripts folder and run:
 
 * sh tc-kmpso-test-16var.sh
 * sh zi-kmpso-test-16var.sh
 
-The first test uses the Tc index, while the second test uses the ZI index.
+The first test uses the Tc index, while the second test uses the zI index.
 
 To test dci and kmpso, enter the scripts folder and run:
 
 * python automatic_sieve.py
 
-Python 3 is assumed to be installed.
+Python >=3.7 is assumed to be installed.
 
 The following parameters must be defined and passed as arguments to dci:
 * path/to/inputfile
