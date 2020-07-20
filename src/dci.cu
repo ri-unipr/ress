@@ -33,8 +33,8 @@ int main(int argc, char** argv) {
     // create application object
     dci::Application* app = new dci::Application(*configuration);
 
-    app->Init(); // initialize application
-    int res = app->Run(); // run main application
+    app->init(); // initialize application
+    int res = app->run(); // run main application
 
     // get end time
     stop = clock();

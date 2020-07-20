@@ -74,19 +74,13 @@ namespace dci
     system_size_bytes;       		    // size of system in bytes
 
     unsigned long allocated_device_bytes;   // total number bytes of global memory allocated on device
-
     bool implicit_agents;                   // if true, all the agents are boolean and are not explicitly defined
-
     bool has_mi_mask;                       // if true, mutual information is computed only relative to a subset of agents
-
     bool compute_mutual_information;        // if true, mutual information is computed; if false, only integration is used
-
-    bool is_initialized;                    // if true, Init() was called (i.e. device memory is allocated)
-
+    bool is_initialized;                    // if true, init() was called (i.e. device memory is allocated)
     unsigned long long L;                   // number of possible system states (2^N)
-
-    dci::RunInfo* conf;                     // stores a pointer to current configuration
-
+    //dci::RunInfo* conf;                     // stores a pointer to current configuration
+    RunInfo* conf;                     // stores a pointer to current configuration
     vector<string> agent_names;             // stores agent names (if specified)
     vector<string> starting_agent_names;             // stores starting agent names (if specified, for sieving)
     vector<vector<pair<unsigned int, register_t*> > > card; // histogram (agent cardinalities)
@@ -129,9 +123,7 @@ namespace dci
 
     // Function declarations
     template<bool ComputeTc, bool ComputeZi, bool ComputeSI, bool ComputeSI_2, bool HistogramOnly> inline unsigned int callKernel(const unsigned int& C, const register_t* clusters, const unsigned int* cluster_sizes, float* output);
-    template<bool ComputeZi,bool ComputeSI, bool ComputeSI_2, bool HistogramOnly> inline unsigned int callKernelCard(const unsigned int& C, const register_t* clusters, const unsigned int* cluster_sizes, float* output, unsigned int* cardinalities);
-    template<bool ComputeZi,bool ComputeSI, bool ComputeSI_2, bool HistogramOnly> inline unsigned int callKernelPool(const unsigned int& C, const register_t* clusters, const unsigned int* cluster_sizes, float* output, register_t* agent_pool);
-
+    template<bool ComputeTc, bool ComputeZi, bool ComputeSI, bool ComputeSI_2, bool HistogramOnly> inline unsigned int callKernelCard(const unsigned int& C, const register_t* clusters, const unsigned int* cluster_sizes, float* output, unsigned int* cardinalities);
     template<bool IsFullComputation> int computeHomogeneousSystemStatistics();
     unique_ptr<vector<dci::ClusterDescriptor> > computeSystemStatistics(ostream& out);
     void collectAgentStatistics();
@@ -174,22 +166,22 @@ namespace dci
     ~Application();
 
     // application initialization - must be called before any calculation begins
-    void Init();
+    void init();
 
     // application entry point for exhaustive computation
-    int Run();
+    int run();
 
     // test
-    void Test();
+    void test();
 
     // computes statistical indexes for all clusters in list, and stores them in output vector
-    void ComputeIndex(const vector<register_t*>& clusters, vector<float>& output_vec);
+    void computeIndex(const vector<register_t*>& clusters, vector<float>& output_vec);
 
     // performs sieving algorithm on a set of input clusters given their Tc values
-    template<bool ascending> void ApplySievingAlgorithm(const vector<register_t*>& input_clusters, const vector<float>& input_ind, vector<register_t*>& output, vector<float>& output_ind, const unsigned int& max_output_count);
+    template<bool ascending> void applySievingAlgorithm(const vector<register_t*>& input_clusters, const vector<float>& input_ind, vector<register_t*>& output, vector<float>& output_ind, const unsigned int& max_output_count);
 
     // selects super clusters from a list of output clusters, using system configuration values
-    template<bool ascending> void SelectSuperClustersAndSave(const vector<register_t*>& results, const vector<float>& zi_values);
+    template<bool ascending> void selectSuperClustersAndSave(const vector<register_t*>& results, const vector<float>& zi_values);
 
     // getters
     inline unsigned int getAgentSizeInBytes();
@@ -217,7 +209,7 @@ namespace dci
   /*
   * Computes statistical indexes for all clusters in list, and stores them in output vector (must be pre-allocated)
   */
-  void Application::ComputeIndex(const vector<register_t*>& clusters_vec, vector<float>& output_vec)
+  void Application::computeIndex(const vector<register_t*>& clusters_vec, vector<float>& output_vec)
   {
     unsigned int total_clusters = clusters_vec.size() * 2; // must include complementary clusters in count
     unsigned int tempCB = total_clusters > CB ? CB : total_clusters;
@@ -231,7 +223,8 @@ namespace dci
     cluster_sizes[0] = NA; // just one NA-sized cluster
 
     // invoke kernel for whole system
-    callKernel<false,false,false,false,false>(1, clusters, cluster_sizes, output);
+    //callKernel<false,false,false,false,false>(1, clusters, cluster_sizes, output);
+    callKernelCard<false,false,false,false,false>(1, clusters, cluster_sizes, output, cardinalities);
 
     // this variable holds number of clusters in batch
     unsigned int C = 0;
@@ -262,31 +255,30 @@ namespace dci
         // invoke kernel for current batch
         if (conf->tc_index)
         {
-          // call kernel
-          //callKernel<true, false>(C, clusters, cluster_sizes, output);
-          callKernel<true,false,false,false,false>(C, clusters, cluster_sizes, output);
+          //callKernel<true,false,false,false,false>(C, clusters, cluster_sizes, output);
+          callKernelCard<true,false,false,false,false>(C, clusters, cluster_sizes, output, cardinalities);
         }
         else if(conf->zi_index)
         {
           //callKernel<true,false,false, false>(C, clusters, cluster_sizes, output);
-          callKernelCard<true,false,false,false>(C, clusters, cluster_sizes, output, cardinalities);
+          callKernelCard<false,true,false,false,false>(C, clusters, cluster_sizes, output, cardinalities);
         }
         else if(conf->strength_index)
         {
           //callKernel<false,true,false,false>(C, clusters, cluster_sizes, output);
-          callKernelCard<false,true,false,false>(C, clusters, cluster_sizes, output, cardinalities);
+          callKernelCard<false,false,true,false,false>(C, clusters, cluster_sizes, output, cardinalities);
         }
         else if(conf->strength2_index)
         {
           //callKernel<false,false,true,false>(C, clusters, cluster_sizes, output);
-          callKernelCard<false,false,true,false>(C, clusters, cluster_sizes, output, cardinalities);
+          callKernelCard<false,false,false,true,false>(C, clusters, cluster_sizes, output, cardinalities);
         }
         if ( conf->tc_index == false && conf->zi_index == false && conf->strength_index == false && conf->strength2_index == false)
         {
           conf->zi_index=true; // pick zi as default
 
           //callKernel<true,false,false,false>(C, clusters, cluster_sizes, output);
-          callKernelCard<true,false,false,false>(C, clusters, cluster_sizes, output, cardinalities);
+          callKernelCard<false,true,false,false,false>(C, clusters, cluster_sizes, output, cardinalities);
         }
 
         // store output
@@ -317,7 +309,7 @@ namespace dci
   /*
   * Just a test for arbitrary cluster index computation
   */
-  void Application::Test()
+  void Application::test()
   {
     // allocate memory for clusters
     vector<register_t*> clusters(2);
@@ -338,7 +330,7 @@ namespace dci
     dci::ClusterUtils::setClusterFromPosArray(clusters[1], cluster2, NA);
 
     // perform computation
-    ComputeIndex (clusters, output);
+    computeIndex(clusters, output);
 
     // print clusters and results
     dci::ClusterUtils::println(cout, clusters[0], NA);
@@ -525,7 +517,7 @@ namespace dci
   * - single agent entropy computation
   * -
   */
-  void Application::Init()
+  void Application::init()
   {
     // store start/end time
     clock_t start = clock(), prev;
@@ -555,7 +547,8 @@ namespace dci
 
     // compute single agent entropies and frequencies
     for (unsigned int i = 0; i != NA; ++i) cluster_sizes[i] = 1;
-    callKernel<false,false,false,false,true>(NA, agent_pool, cluster_sizes, system_entropies);
+    //callKernel<false,false,false,false,true>(NA, agent_pool, cluster_sizes, system_entropies);
+    callKernelCard<false,false,false,false,true>(NA, agent_pool, cluster_sizes, system_entropies, cardinalities);
     tuneFunction("Agent entropies", clock() - prev); prev = clock();
 
     HANDLE_ERROR( cudaMemcpy( frequencies, dev_frequencies, CB * HB * sizeof(unsigned int), cudaMemcpyDeviceToHost ) );
@@ -636,7 +629,8 @@ namespace dci
         free(hsystem_data);
 
         // compute single agent entropies
-        callKernel<false,false,false,false,true>(NA, agent_pool, cluster_sizes, system_entropies);
+        //callKernel<false,false,false,false,true>(NA, agent_pool, cluster_sizes, system_entropies);
+        callKernelCard<false,false,false,false,true>(NA, agent_pool, cluster_sizes, system_entropies, cardinalities);
         tuneFunction("Hsystem entropies", clock() - prev); prev = clock();
 
         // compute h. system statistics
@@ -675,7 +669,7 @@ namespace dci
   * - loads the homogeneous system, or creates it if not specified
   * - starts the CUDA computation and prints the results
   */
-  int Application::Run()
+  int Application::run()
   {
     verbose_cout << "Computing system statistics\n";
 
@@ -713,7 +707,7 @@ namespace dci
       if (conf->tc_index == true)
       out << "Tc" << (NO ? "\tComp" : "") << endl;
       else
-      out << "ZI" << (NO ? "\tComp" : "") << endl;
+      out << "zI" << (NO ? "\tComp" : "") << endl;
 
       // print all clusters
       for (unsigned int i = 0; i != results->size(); ++i)
@@ -810,7 +804,8 @@ namespace dci
     unsigned int old_HB = HB, new_HB;
 
     // invoke kernel for whole system
-    new_HB = callKernel<false,false,false,false,false>(1, clusters, cluster_sizes, output);
+    //new_HB = callKernel<false,false,false,false,false>(1, clusters, cluster_sizes, output);
+    new_HB = callKernelCard<false,false,false,false,false>(1, clusters, cluster_sizes, output, cardinalities);
 
     // reallocate histogram memory on device
     reallocateHistogramMemory(new_HB);
@@ -849,7 +844,8 @@ namespace dci
           if (C == CB || (IsFullComputation && r == NA / 2 && !has_next) || (!IsFullComputation && r == NA / 2 && cc == conf->hs_count))
           {
             // invoke kernel for current batch
-            callKernel<false,false,false,false,false>(C, clusters, cluster_sizes, output);
+            //callKernel<false,false,false,false,false>(C, clusters, cluster_sizes, output);
+            callKernelCard<false,false,false,false,false>(C, clusters, cluster_sizes, output, cardinalities);
 
             // reset extra cluster count
             to_subtract = 0;
@@ -958,7 +954,8 @@ namespace dci
       unsigned int old_HB = HB, new_HB;
 
       // invoke kernel for whole system
-      new_HB = callKernel<false,false,false,false,false>(1, clusters, cluster_sizes, output);
+      //new_HB = callKernel<false,false,false,false,false>(1, clusters, cluster_sizes, output);
+      new_HB = callKernelCard<false,false,false,false,false>(1, clusters, cluster_sizes, output, cardinalities);
 
       // reallocate histogram memory on device
       reallocateHistogramMemory(new_HB);
@@ -991,33 +988,29 @@ namespace dci
             // invoke kernel for current batch
             if(conf->tc_index)
             {
-              callKernel<true,false,false,false,false>(C, clusters, cluster_sizes, output);
+              callKernelCard<true,false,false,false,false>(C, clusters, cluster_sizes, output, cardinalities);
             }
             if(conf->zi_index)
             {
               //callKernel<true,false,false, false>(C, clusters, cluster_sizes, output);
-              callKernelCard<true,false,false, false>(C, clusters, cluster_sizes, output, cardinalities);
-              //callKernelPool<true,false,false, false>(C, clusters, cluster_sizes, output, agent_pool);
+              callKernelCard<false,true,false,false, false>(C, clusters, cluster_sizes, output, cardinalities);
             }
             else if(conf->strength_index)
             {
               //callKernel<false,true, false,false>(C, clusters, cluster_sizes, output);
-              callKernelCard<false,true, false,false>(C, clusters, cluster_sizes, output, cardinalities);
-              //callKernelPool<true,false,false, false>(C, clusters, cluster_sizes, output, agent_pool);
+              callKernelCard<false,false,true, false,false>(C, clusters, cluster_sizes, output, cardinalities);
             }
             else if(conf->strength2_index)
             {
               //callKernel<false,false,true, false>(C, clusters, cluster_sizes, output);
-              callKernelCard<false,false,true, false>(C, clusters, cluster_sizes, output, cardinalities);
-              //callKernelPool<true,false,false, false>(C, clusters, cluster_sizes, output, agent_pool);
+              callKernelCard<false,false,false,true, false>(C, clusters, cluster_sizes, output, cardinalities);
             }
 
             if ( conf->tc_index == false && conf->zi_index == false && conf->strength_index == false && conf->strength2_index == false)
             {
               conf->zi_index=true; // pick zi as default
               //callKernel<true,false,false, false>(C, clusters, cluster_sizes, output);
-              callKernelCard<true,false,false, false>(C, clusters, cluster_sizes, output, cardinalities);
-              //callKernelPool<true,false,false, false>(C, clusters, cluster_sizes, output, agent_pool);
+              callKernelCard<false,true,false,false, false>(C, clusters, cluster_sizes, output, cardinalities);
             }
 
             // reset extra cluster count
@@ -1408,7 +1401,7 @@ namespace dci
     * Cardinalities
     * Calls kernel according to sample size, performing copy operations for input and output data
     */
-    template<bool ComputeZi, bool ComputeSI,bool ComputeSI_2, bool HistogramOnly>
+    template<bool ComputeTc, bool ComputeZi, bool ComputeSI,bool ComputeSI_2, bool HistogramOnly>
     inline unsigned int Application::callKernelCard(const unsigned int& C, const register_t* clusters, const unsigned int* cluster_sizes, float* output, unsigned int* cardinalities)
     {
       // reset return value
@@ -1433,551 +1426,257 @@ namespace dci
         histo_kernel< 1, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel< 1><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card< 1, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 1, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card< 1, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 1, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 2 :
         histo_kernel< 2, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel< 2><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card< 2, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 2, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card< 2, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 2, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 3 :
         histo_kernel< 3, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel< 3><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card< 3, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 3, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card< 3, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 3, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 4 :
         histo_kernel< 4, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel< 4><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card< 4, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 4, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card< 4, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 4, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 5 :
         histo_kernel< 5, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel< 5><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card< 5, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 5, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card< 5, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 5, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 6 :
         histo_kernel< 6, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel< 6><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card< 6, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 6, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card< 6, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 6, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 7 :
         histo_kernel< 7, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel< 7><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card< 7, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 7, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card< 7, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 7, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 8 :
         histo_kernel< 8, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel< 8><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card< 8, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 8, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card< 8, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 8, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 9 :
         histo_kernel< 9, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel< 9><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card< 9, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 9, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card< 9, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card< 9, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 10:
         histo_kernel<10, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<10><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<10, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<10, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<10, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<10, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 11:
         histo_kernel<11, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<11><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<11, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<11, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<11, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<11, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 12:
         histo_kernel<12, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<12><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<12, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<12, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<12, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<12, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 13:
         histo_kernel<13, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<13><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<13, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<13, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<13, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<13, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 14:
         histo_kernel<14, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<14><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<14, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<14, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<14, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<14, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 15:
         histo_kernel<15, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<15><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<15, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<15, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<15, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<15, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 16:
         histo_kernel<16, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<16><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<16, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<16, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<16, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<16, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 17:
         histo_kernel<17, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<17><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<17, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<17, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<17, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<17, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 18:
         histo_kernel<18, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<18><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<18, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<18, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<18, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<18, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 19:
         histo_kernel<19, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<19><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<19, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<19, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<19, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<19, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 20:
         histo_kernel<20, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<20><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<20, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<20, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<20, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<20, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 21:
         histo_kernel<21, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<21><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<21, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<21, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<21, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<21, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 22:
         histo_kernel<22, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<22><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<22, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<22, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<22, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<22, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 23:
         histo_kernel<23, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<23><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<23, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<23, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<23, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<23, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 24:
         histo_kernel<24, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<24><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<24, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<24, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<24, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<24, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 25:
         histo_kernel<25, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<25><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<25, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<25, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<25, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<25, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 26:
         histo_kernel<26, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<26><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<26, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<26, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<26, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<26, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 27:
         histo_kernel<27, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<27><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<27, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<27, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<27, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<27, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 28:
         histo_kernel<28, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<28><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<28, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<28, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<28, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<28, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 29:
         histo_kernel<29, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<29><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<29, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<29, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<29, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<29, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 30:
         histo_kernel<30, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<30><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<30, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<30, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<30, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<30, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 31:
         histo_kernel<31, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<31><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<31, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<31, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<31, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<31, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
         case 32:
         histo_kernel<32, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
         entropy_kernel<32><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
         if (compute_mutual_information)
-        cluster_kernel_card<32, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
+        cluster_kernel_card<32, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         else
-        cluster_kernel_card<32, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
-        break;
-      }
-
-      // copy results from device
-      if (!HistogramOnly) HANDLE_ERROR( cudaMemcpy( output, dev_output, sizeof(float) * C, cudaMemcpyDeviceToHost ) );
-
-      // copy count from device if necessary
-      if (C == 1) HANDLE_ERROR( cudaMemcpy( (void*)&ret, dev_count, sizeof(unsigned int), cudaMemcpyDeviceToHost ) );
-
-      // return number of different sample values
-      return ret;
-    }
-
-
-    /*
-    * Cardinalities
-    * Calls kernel according to sample size, performing copy operations for input and output data
-    */
-    template<bool ComputeZi, bool ComputeSI,bool ComputeSI_2, bool HistogramOnly>
-    inline unsigned int Application::callKernelPool(const unsigned int& C, const register_t* clusters, const unsigned int* cluster_sizes, float* output, register_t* agent_pool)
-    {
-      // reset return value
-      unsigned int ret = 0;
-
-      // copy data to device
-      HANDLE_ERROR( cudaMemcpy( dev_clusters, clusters, sample_size_bytes * C, cudaMemcpyHostToDevice ) );
-      HANDLE_ERROR( cudaMemcpy( dev_cluster_size, cluster_sizes, sizeof(unsigned int) * C, cudaMemcpyHostToDevice ) );
-      params.C = C;
-      HANDLE_ERROR( cudaMemcpyToSymbol( SP, (void*)&params, sizeof(SystemParameters) ) );
-      HANDLE_ERROR( cudaMemcpy( dev_agent_pool, agent_pool, agent_pool_size_bytes, cudaMemcpyHostToDevice ) );
-
-      // reset device data
-      HANDLE_ERROR( cudaMemset( (void*)dev_entropies, 0, sizeof(float) * C ) );
-      HANDLE_ERROR( cudaMemset( (void*)dev_frequencies, 0, sizeof(unsigned int) * HB * CB ) );
-      HANDLE_ERROR( cudaMemset( (void*)dev_next, 0, sizeof(register_t*) * HB * CB ) );
-
-      // call kernel according to sample size
-      switch (S)
-      {
-        case 1 :
-        histo_kernel< 1, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel< 1><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool< 1, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool< 1, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 2 :
-        histo_kernel< 2, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel< 2><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool< 2, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool< 2, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 3 :
-        histo_kernel< 3, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel< 3><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool< 3, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool< 3, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 4 :
-        histo_kernel< 4, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel< 4><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool< 4, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool< 4, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 5 :
-        histo_kernel< 5, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel< 5><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool< 5, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool< 5, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 6 :
-        histo_kernel< 6, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel< 6><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool< 6, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool< 6, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 7 :
-        histo_kernel< 7, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel< 7><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool< 7, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool< 7, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 8 :
-        histo_kernel< 8, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel< 8><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool< 8, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool< 8, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 9 :
-        histo_kernel< 9, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel< 9><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool< 9, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool< 9, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 10:
-        histo_kernel<10, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<10><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<10, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<10, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 11:
-        histo_kernel<11, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<11><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<11, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<11, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 12:
-        histo_kernel<12, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<12><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<12, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<12, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 13:
-        histo_kernel<13, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<13><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<13, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<13, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 14:
-        histo_kernel<14, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<14><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<14, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<14, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 15:
-        histo_kernel<15, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<15><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<15, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<15, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 16:
-        histo_kernel<16, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<16><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<16, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<16, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 17:
-        histo_kernel<17, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<17><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<17, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<17, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 18:
-        histo_kernel<18, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<18><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<18, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<18, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 19:
-        histo_kernel<19, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<19><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<19, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<19, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 20:
-        histo_kernel<20, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<20><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<20, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<20, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 21:
-        histo_kernel<21, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<21><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<21, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<21, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 22:
-        histo_kernel<22, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<22><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<22, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<22, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 23:
-        histo_kernel<23, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<23><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<23, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<23, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 24:
-        histo_kernel<24, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<24><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<24, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<24, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 25:
-        histo_kernel<25, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<25><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<25, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<25, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 26:
-        histo_kernel<26, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<26><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<26, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<26, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 27:
-        histo_kernel<27, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<27><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<27, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<27, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 28:
-        histo_kernel<28, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<28><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<28, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<28, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 29:
-        histo_kernel<29, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<29><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<29, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<29, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 30:
-        histo_kernel<30, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<30><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<30, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<30, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 31:
-        histo_kernel<31, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<31><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<31, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<31, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        break;
-        case 32:
-        histo_kernel<32, HistogramOnly><<<num_blocks, num_threads>>>(dev_system, dev_clusters, dev_histogram, dev_frequencies, dev_next);
-        entropy_kernel<32><<<num_blocks, num_threads>>>(dev_frequencies, dev_entropies, C == 1 ? dev_count : 0);
-        if (compute_mutual_information)
-        cluster_kernel_agent_pool<32, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, true><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
-        else
-        cluster_kernel_agent_pool<32, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_agent_pool);
+        cluster_kernel_card<32, ComputeTc, ComputeZi, ComputeSI, ComputeSI_2, HistogramOnly, false><<<num_blocks, num_threads>>>(dev_system_entropies, dev_hsystem_stats, dev_clusters, dev_cluster_size, dev_entropies, dev_output, dev_cardinalities);
         break;
       }
 
@@ -2259,7 +1958,7 @@ namespace dci
     /*
     * Selects super clusters from a list of output clusters, using system configuration values
     */
-    template<bool ascending> void Application::SelectSuperClustersAndSave(const vector<register_t*>& results, const vector<float>& zi_values)
+    template<bool ascending> void Application::selectSuperClustersAndSave(const vector<register_t*>& results, const vector<float>& zi_values)
     {
       // check input size
       if (!results.size()) return;
@@ -2277,7 +1976,7 @@ namespace dci
     /*
     * Performs sieving on an arbitrary set of clusters, given their Tc values. Automatically translates packed clusters in unpacked ones.
     */
-    template<bool ascending> void Application::ApplySievingAlgorithm(const vector<register_t*>& input_clusters, const vector<float>& input_ind, vector<register_t*>& output, vector<float>& output_ind, const unsigned int& max_output_count)
+    template<bool ascending> void Application::applySievingAlgorithm(const vector<register_t*>& input_clusters, const vector<float>& input_ind, vector<register_t*>& output, vector<float>& output_ind, const unsigned int& max_output_count)
     {
       if (!input_clusters.size()) return;
 

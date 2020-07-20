@@ -116,7 +116,7 @@
     }
 
     // perform computation
-    app->ComputeIndex(clusters, output);
+    app->computeIndex(clusters, output);
 
     for (int s=0;s<S; s++)
     {
@@ -627,7 +627,7 @@
     app = new dci::Application(configuration);
 
     // initialize application
-    app->Init();
+    app->init();
 
     fitness=0;
     w = 0.73;
