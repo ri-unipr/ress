@@ -24,10 +24,10 @@ for i in range(0,NA-1):
 var_string+=variables[NA-1]
 
 #source system file: variable encoding
-forig_var_bit= "systems/CSTR20_00_var_bit.txt"
+forig_var_bit= "systems/CSTR16_00_var_bit.txt"
 
 #source file system: data
-forig_data= "systems/CSTR20_00_dati.txt"
+forig_data= "systems/CSTR16_00_data.txt"
 
 directory_input_file="system_data/"
 if not path.exists(directory_input_file):
@@ -116,16 +116,14 @@ while (index >=3 and num_var>2):
         output_file="result_"+str(iteration)+".txt"
         arg_output=directory_output+output_file
 
-    ## TODO: stampare header variabili
-        if (num_var < 12):
+        if (num_var < 20):
             args = ("../bin/dci", arg_input_file, "--rand-seed:123456", "--tc", "--out:"+arg_output)
         else:
-            args = ("../bin/kmpso", str(num_var), "2000", "1", "3", "501", "20", "100", "50", "123456", arg_input_file, arg_output, "tc", var_string, str(flag_init), "")
+            args = ("../bin/kmpso", str(num_var), "2000", "1", "3", "501", "20", "100", "100", "123456", arg_input_file, arg_output, "tc", var_string, str(flag_init), "")
 
         print(args)
         popen = subprocess.Popen(args)
         popen.wait()
-
 
 	#READING FILE OUTPUT
 
@@ -135,7 +133,6 @@ while (index >=3 and num_var>2):
 
         #variable names
         var_names=lines[0]
-	#var_names=var_names.replace("\n", "")
         var_names=var_names.replace("\t", " ")
         var_names=re.split(' ',var_names)
         print(var_names)
@@ -161,7 +158,7 @@ while (index >=3 and num_var>2):
             index=float(group[-1])
             group=group[:-1]
         else:
-	    #removal of the last 2 elements: "index", "comp"
+	        #removal of the last 2 elements: "index", "comp"
             index=float(group[-2])
             group=group[:-2]
         print(group)
@@ -172,7 +169,7 @@ while (index >=3 and num_var>2):
 
 	#NEW VARIABLES GENERATION
 
-	#new_variable files
+	    #new_variable files
         foutname = "variables/variables_"+str(iteration)+".txt"
 
         names_list=re.split(' ',var_names)
@@ -191,7 +188,7 @@ while (index >=3 and num_var>2):
 
         new_variables_list=[]
 
-	#new group in first place
+	    #new group in first place
         new_variables_list.append("")
 
         for i in range(0,names_list_len):
@@ -207,7 +204,6 @@ while (index >=3 and num_var>2):
         num_var=len(new_variables_list)
         print("Number new variables: "+str(num_var))
 
-        ## SC aggiunta
         var_string=""
 
         for i in range(0,len(new_variables_list)-1):
@@ -300,8 +296,6 @@ while (index >=3 and num_var>2):
 	#number of samples
         data_len=len(data_list)
         print(data_len)
-
-	#print(data_list[1][1])
 
 	#generation of ordered data
         for i in range(0,data_len):
