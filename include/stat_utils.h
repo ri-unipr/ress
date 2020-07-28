@@ -57,17 +57,17 @@ namespace dci
         return m_n;
       }
 
-      float mean() const
+      double mean() const
       {
         return (m_n > 0) ? m_newM : 0.0;
       }
 
-      float variance() const
+      double variance() const
       {
         return ( (m_n > 1) ? m_newS/(m_n - 1) : 0.0 );
       }
 
-      float standardDeviation() const
+      double standardDeviation() const
       {
         return sqrt( variance() );
       }
