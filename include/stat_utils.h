@@ -18,7 +18,7 @@ namespace dci
 
     /*
     * This class is used to compute statistics
-    * over a running sequence of float values
+    * over a running sequence of double values
     */
     class RunningStat
     {
@@ -31,7 +31,7 @@ namespace dci
         m_n = 0;
       }
 
-      void push(float x)
+      void push(double x)
       {
         m_n++;
 
@@ -75,7 +75,7 @@ namespace dci
     private:
 
       int m_n;
-      float m_oldM, m_newM, m_oldS, m_newS;
+      double m_oldM, m_newM, m_oldS, m_newS;
     };
 
     class Binomial

@@ -1,6 +1,6 @@
-# Relevance Index (RI)
+# ReSS (Relevance Set Search)
 
-Implementation of the RI in C++ (requires CUDA 9 or higher).
+Implementation in C++ (requires CUDA 9 or higher), with Python scripts.
 
 Once downloaded the whole project folder, compile the binaries.
 
@@ -8,6 +8,7 @@ On Linux machines:
 
 * make dci
 * make kmpso
+* make homgen
 
 To test dci, enter the scripts folder and run:
 
