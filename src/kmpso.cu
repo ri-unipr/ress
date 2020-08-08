@@ -489,7 +489,7 @@
     rseed = 123456;
     hseed = rseed;
     configuration.input_file_name = "./system_data/system_0.txt";
-    string output_file = "./output-tc-kmpso-16var.txt";
+    string output_file = "./output-tc-kmpso.txt";
     configuration.hs_input_file_name = "";
     configuration.hs_output_file_name = "";
     string chosen_index = "zi";
@@ -528,8 +528,16 @@
         std::string name = arg.substr(0, pos);
         std::string value = arg.substr(pos + 1);
 
-        if (name == "--dimension")
-        D = atoi(value.data());
+        if (name == "--dimension") {
+          D = atoi(value.data());
+          if (var_string == "") {
+            std::string temp = "";
+            for (int j = 0; j < D; j++) {
+              temp = "[" + std::to_string(j) + "] ";
+              var_string += temp;
+            }
+          }
+        }
         else if (name == "--swarm_size")
         S = atoi(value.data());
         else if (name == "--n_seeds")
