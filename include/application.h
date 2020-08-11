@@ -554,11 +554,11 @@ namespace dci
     HANDLE_ERROR( cudaMemcpy( frequencies, dev_frequencies, CB * HB * sizeof(unsigned int), cudaMemcpyDeviceToHost ) );
     HANDLE_ERROR( cudaMemcpy( histogram, dev_histogram, CB * HB * sample_size_bytes, cudaMemcpyDeviceToHost ) );
 
-    //inizializzazione cardinalities
+    //initialize cardinalities
     for (unsigned int a = 0; a != NA; ++a)
     cardinalities[a]=0;
 
-    //calcolo cardinalities
+    //compute cardinalities
     for (unsigned int a = 0; a != NA; ++a)
     {
       unsigned int block_idx = a / conf->num_threads;

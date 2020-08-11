@@ -53,6 +53,7 @@ int main(int argc, char** argv) {
       configuration->hs_output_file_name = value;
       else if (name == "--hs-data-out")
       configuration->hs_data_output_file_name = value;
+      /*
       else if (name == "--rand-seed")
       {
         if ((configuration->rand_seed = std::atoi(value.data())) == 0)
@@ -61,6 +62,7 @@ int main(int argc, char** argv) {
           return -1;
         }
       }
+      */
       else
       {
         configuration->error_message = "unknown argument: " + name;
@@ -79,6 +81,8 @@ int main(int argc, char** argv) {
 
   configuration->verbose = true;
   configuration->tc_index = true;
+  srand(time(NULL));
+  configuration->rand_seed = rand();  
 
   // store start/end time
   clock_t start = clock(), stop;

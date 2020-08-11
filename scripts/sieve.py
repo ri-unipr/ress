@@ -5,128 +5,116 @@ import time
 import os
 from os import path
 
-#DCI PARAMETERS
 
-#number of variables (starting system)
-NA=16;
-#number of bits per variable (starting system)
-NB=2;
+def execute_sieve(NA, NB, variables, input_file, input_encoding_file, var_string):
 
-#SIEVE PARAMETERS
+    directory_input_file = "system_data/"
+    if not path.exists(directory_input_file):
+        try:
+            os.mkdir(directory_input_file)
+        except OSError:
+            print ("Creation of the directory %s failed" % path)
+        else:
+            print ("Successfully created the directory %s " % path)
 
-#variable names (source system)
-#CSTR
-variables=["A","AA","AAA","AAAA","AAAB","AAB","AABBA","AB","ABA","ABBBBA","B","BA","BAA","BAAB","BBB","BBBABA"]
+    directory_output = "results/"
+    if not path.exists(directory_output):
+        try:
+            os.mkdir(directory_output)
+        except OSError:
+            print ("Creation of the directory %s failed" % path)
+        else:
+            print ("Successfully created the directory %s " % path)
 
-var_string=""
-for i in range(0,NA-1):
-    var_string+=variables[i]+" "
-var_string+=variables[NA-1]
+    #source system file: variable encoding
+    forig_var_bit = input_encoding_file
 
-#source system file: variable encoding
-forig_var_bit= "systems/CSTR16_00_var_bit.txt"
-
-#source file system: data
-forig_data= "systems/CSTR16_00_data.txt"
-
-directory_input_file="system_data/"
-if not path.exists(directory_input_file):
-    try:
-        os.mkdir(directory_input_file)
-    except OSError:
-        print ("Creation of the directory %s failed" % path)
-    else:
-        print ("Successfully created the directory %s " % path)
-
-directory_output= "results/"
-if not path.exists(directory_output):
-    try:
-        os.mkdir(directory_output)
-    except OSError:
-        print ("Creation of the directory %s failed" % path)
-    else:
-        print ("Successfully created the directory %s " % path)
+    #source file system: data
+    forig_data = input_file
 
 
-#HOMOGENEOUS SYSTEM PARAMETERS
-arg_seed="--rand-seed:"
-seed="123456"
-arg_seed+=seed
-
-start_time = time.time()
-
-#SAVING THE BIT NUMBER FOR EACH VARIABLE
-#reading the number of bits per original system variable
-with open(forig_var_bit) as f:
-    lines = f.readlines()
-
-orig_var_bit_list = []
-
-for line in lines:
-	num_bit = line.count('1')
-	orig_var_bit_list.append(num_bit)
-
-print(orig_var_bit_list)
-
-if len(orig_var_bit_list) != NA:
-	print("Size error")
-	sys.exit()
+    start_time = time.time()
 
 
-#GENERATION OF THE SIEVE FILE HEADING LINE
+    #SAVING THE BIT NUMBER FOR EACH VARIABLE
 
-#header of binary coding variables
-header_var_bin=""
+    #reading the number of bits per original system variable
+    with open(forig_var_bit) as f:
+        lines = f.readlines()
 
-for i in range(0,NA):
-	for j in range(0,NA):
-		if(i==j):
-			for k in range(0,NB):
-				header_var_bin+="1"
-		else:
-			for k in range(0,NB):
-				header_var_bin+="0"
+    orig_var_bit_list = []
 
-	header_var_bin+=" "
+    for line in lines:
+        num_bit = line.count('1')
+        orig_var_bit_list.append(num_bit)
 
-#removal of the last space
-header_var_bin=header_var_bin[:-1]
-print(header_var_bin)
+    print(orig_var_bit_list)
+
+    if len(orig_var_bit_list) != NA:
+        print("Size error")
+        sys.exit()
 
 
-#DCI EXECUTION CYCLE PLUS SIEVE
+    #GENERATION OF THE SIEVE FILE HEADING LINE
 
-index=3;
-iteration=0;
-num_var=NA;
+    #header of binary coding variables
+    header_var_bin=""
 
-while (index >=3 and num_var>2):
+    for i in range(0,NA):
+    	for j in range(0,NA):
+    		if(i==j):
+    			for k in range(0,NB):
+    				header_var_bin+="1"
+    		else:
+    			for k in range(0,NB):
+    				header_var_bin+="0"
+
+    	header_var_bin+=" "
+
+    #removal of the last space
+    header_var_bin=header_var_bin[:-1]
+    print(header_var_bin)
+
+
+    #EXECUTION CYCLE
+
+    index = 3;
+    iteration = 0;
+    num_var = NA;
+
+    while (index >=3 and num_var>2):
         iteration+=1
         print("\n\niteration "+str(iteration)+"\n\n")
-        ## SC Aggiunto controllo per stampa risultati dentro kmpso
         if (iteration == 1):
             flag_init = 0
         else:
             flag_init = 1
 
-#EXECUTION IN C ++
-        input_file="system_"+str(iteration-1)+".txt"
-        arg_input_file=directory_input_file+input_file
+        input_file = "system_"+str(iteration-1)+".txt"
+        arg_input_file = directory_input_file+input_file
         print(arg_input_file)
-        output_file="result_"+str(iteration)+".txt"
-        arg_output=directory_output+output_file
+        output_file = "result_"+str(iteration)+".txt"
+        arg_output = directory_output+output_file
+        hs_file = "hsfile_"+str(iteration)+".txt"
+        arg_hsfile = directory_output + hs_file
+
+        args = ("../bin/homgen", arg_input_file, "--hs-out:"+arg_hsfile)
+        print(args)
+        popen = subprocess.Popen(args)
+        popen.wait()
 
         if (num_var < 20):
-            #args = ("../bin/dci", arg_input_file, "--rseed:123456", "--tc", "--out:"+arg_output)
-            args = ("../bin/dci", arg_input_file, "--tc", "--out:"+arg_output)
+            #args = ("../bin/dci", arg_input_file, "--rseed:123456", "--tc", "--out:"+arg_output, "--hsinputfile:"+arg_hsfile)
+            args = ("../bin/dci", arg_input_file, "--tc", "--out:"+arg_output, "--hsinputfile:"+arg_hsfile)
+            #args = ("../bin/dci", arg_input_file, "--tc", "--out:"+arg_output)
         else:
-            args = ("../bin/kmpso", str(num_var), "2000", "1", "3", "501", "20", "100", "100", "123456", arg_input_file, arg_output, "tc", var_string, str(flag_init), "")
+            args = ("../bin/kmpso", "--dimension:"+str(num_var), "--swarm_size:2000", "--n_seeds:7", "--range:3", "--n_iterations:501", "--kmeans_interv:20", "--print_interv:100", "--N_results:100", "--rseed:123456", arg_input_file, arg_output, "--tc", "--var_string:"+var_string, "--comp_on:"+str(flag_init), "--hsinputfile:"+arg_hsfile)
 
         print(args)
         popen = subprocess.Popen(args)
         popen.wait()
 
-	#READING FILE OUTPUT
+	    #READING FILE OUTPUT
 
         fout=directory_output+output_file
         with open(fout) as f:
@@ -317,5 +305,5 @@ while (index >=3 and num_var>2):
 
         out_file.close()
 
-print("TIME")
-print(time.time() - start_time)
+    print("TIME")
+    print(time.time() - start_time)

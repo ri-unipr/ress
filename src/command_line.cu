@@ -23,6 +23,15 @@ namespace dci
     RunInfo_p pointer_to_data(new RunInfo());
     int pos;
 
+    // default values
+    pointer_to_data->input_file_name = "./systems/cstr_21.txt";
+    pointer_to_data->rand_seed = 123456;
+    pointer_to_data->tc_index = true;
+    pointer_to_data->res = 132;
+    pointer_to_data->output_file_name = "./results/output-tc-dci-21var.txt";
+    pointer_to_data->hs_input_file_name = "./hsfile-21.txt";
+    pointer_to_data->verbose = true;
+
     // cycle all command-line arguments
     for (int i = 1; i < argc; ++i)
     {
@@ -33,11 +42,13 @@ namespace dci
       */
       if (arg.length() >= 2 && (arg[0] != '-' || arg[1] != '-')) // this is a filename
       {
+        /*
         if (pointer_to_data->input_file_name != "") // file was already specified, error
         {
           pointer_to_data->error_message = "more than one file specified or unknown argument: " + arg;
           return pointer_to_data;
         }
+        */
         pointer_to_data->input_file_name = arg;
       }
 
@@ -83,19 +94,19 @@ namespace dci
 
         if (name ==  "--out")
         pointer_to_data->output_file_name = value;
-        else if (name == "--hs-in")
+        else if (name == "--hsinputfile")
         pointer_to_data->hs_input_file_name = value;
-        else if (name == "--hs-out")
-        pointer_to_data->hs_output_file_name = value;
-        else if (name == "--hs-data-in")
-        pointer_to_data->hs_data_input_file_name = value;
-        else if (name == "--hs-data-out")
-        pointer_to_data->hs_data_output_file_name = value;
+        //else if (name == "--hs-out")
+        //pointer_to_data->hs_output_file_name = value;
+        //else if (name == "--hs-data-in")
+        //pointer_to_data->hs_data_input_file_name = value;
+        //else if (name == "--hs-data-out")
+        //pointer_to_data->hs_data_output_file_name = value;
         else if (name == "--sv-out")
         pointer_to_data->sieving_out = value;
         else if (name == "--metric")
         pointer_to_data->metric = value;
-        else if (name == "--rand-seed")
+        else if (name == "--rseed")
         {
           if ((pointer_to_data->rand_seed = std::atoi(value.data())) == 0)
           {
@@ -167,10 +178,12 @@ namespace dci
             return pointer_to_data;
           }
         }
+        /*
         else if (name == "--hs-count")
         {
           pointer_to_data->hs_count = std::atoi(value.data());
         }
+        */
         else
         {
           pointer_to_data->error_message = "unknown argument: " + name;
@@ -217,13 +230,13 @@ namespace dci
     std::cout << "--out:file           writes results to file\n";
     std::cout << "--nb:file            number of parallel execution blocks (default 128)\n";
     std::cout << "--nt:file            number of threads per block (default 8)\n";
-    std::cout << "--hs-in:file         reads homogeneous system stats from file\n";
-    std::cout << "--hs-out:file        writes homogeneous system stats to file\n";
-    std::cout << "--hs-data-in:file    reads homogeneous system data from file\n";
-    std::cout << "--hs-data-out:file   writes homogeneous system data to file\n";
-    std::cout << "--hs-count:number    number of clusters to be used in homogeneous system statistics computation for each cluster size\n";
+    std::cout << "--hsinputfile:file   reads homogeneous system stats from file\n";
+    //std::cout << "--hs-out:file        writes homogeneous system stats to file\n";
+    //std::cout << "--hs-data-in:file    reads homogeneous system data from file\n";
+    //std::cout << "--hs-data-out:file   writes homogeneous system data to file\n";
+    //std::cout << "--hs-count:number    number of clusters to be used in homogeneous system statistics computation for each cluster size\n";
     std::cout << "--metric:value       metric used to rank clusters ('rel' for relevance index, 'int' for integration; default: 'rel')\n";
-    std::cout << "--rand-seed:number   sets random number generator seed\n";
+    std::cout << "--rseed:number       sets random number generator seed\n";
     std::cout << "--res:number         sets number of results to keep (default 30)\n";
     std::cout << "--sv                 applies sieving algorithm\n";
     std::cout << "--sv-max:number      sets number of results to keep internally (default 100000). Only with --sv option\n";
