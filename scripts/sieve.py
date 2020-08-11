@@ -6,32 +6,13 @@ import os
 from os import path
 
 
-def execute_sieve(NA, NB, variables, input_file, input_encoding_file, var_string):
-
-    directory_input_file = "system_data/"
-    if not path.exists(directory_input_file):
-        try:
-            os.mkdir(directory_input_file)
-        except OSError:
-            print ("Creation of the directory %s failed" % path)
-        else:
-            print ("Successfully created the directory %s " % path)
-
-    directory_output = "results/"
-    if not path.exists(directory_output):
-        try:
-            os.mkdir(directory_output)
-        except OSError:
-            print ("Creation of the directory %s failed" % path)
-        else:
-            print ("Successfully created the directory %s " % path)
+def execute_sieve(NA, NB, variables, input_file, input_file_only_data, directory_input_file, input_encoding_file, hs_file, directory_hs_file, directory_output_file, var_string):
 
     #source system file: variable encoding
     forig_var_bit = input_encoding_file
 
     #source file system: data
-    forig_data = input_file
-
+    forig_data = directory_input_file+input_file_only_data
 
     start_time = time.time()
 
@@ -90,25 +71,27 @@ def execute_sieve(NA, NB, variables, input_file, input_encoding_file, var_string
         else:
             flag_init = 1
 
-        input_file = "system_"+str(iteration-1)+".txt"
-        arg_input_file = directory_input_file+input_file
+        if (iteration > 1): # instead, use the input file passed as arg
+            input_file = "system_"+str(iteration-1)+".txt"
+        arg_input_file = directory_input_file + input_file
         print(arg_input_file)
         output_file = "result_"+str(iteration)+".txt"
-        arg_output = directory_output+output_file
-        hs_file = "hsfile_"+str(iteration)+".txt"
-        arg_hsfile = directory_output + hs_file
+        arg_output_file = directory_output_file + output_file
+        if (iteration > 1): # instead, use the hs_file passed as arg
+            hs_file = "hsfile_"+str(num_var)+"_"+str(iteration-1)+".txt"
+        arg_hs_file = directory_hs_file + hs_file
+        print(arg_hs_file)
 
-        args = ("../bin/homgen", arg_input_file, "--hs-out:"+arg_hsfile)
-        print(args)
-        popen = subprocess.Popen(args)
-        popen.wait()
+        if (iteration > 1):
+            args = ("../bin/homgen", arg_input_file, "--hs-out:"+arg_hs_file)
+            print(args)
+            popen = subprocess.Popen(args)
+            popen.wait()
 
         if (num_var < 20):
-            #args = ("../bin/dci", arg_input_file, "--rseed:123456", "--tc", "--out:"+arg_output, "--hsinputfile:"+arg_hsfile)
-            args = ("../bin/dci", arg_input_file, "--tc", "--out:"+arg_output, "--hsinputfile:"+arg_hsfile)
-            #args = ("../bin/dci", arg_input_file, "--tc", "--out:"+arg_output)
+            args = ("../bin/dci", arg_input_file, "--tc", "--out:"+arg_output_file, "--hsinputfile:"+arg_hs_file)
         else:
-            args = ("../bin/kmpso", "--dimension:"+str(num_var), "--swarm_size:2000", "--n_seeds:7", "--range:3", "--n_iterations:501", "--kmeans_interv:20", "--print_interv:100", "--N_results:100", "--rseed:123456", arg_input_file, arg_output, "--tc", "--var_string:"+var_string, "--comp_on:"+str(flag_init), "--hsinputfile:"+arg_hsfile)
+            args = ("../bin/kmpso", "--dimension:"+str(num_var), "--swarm_size:2000", "--n_seeds:7", "--range:3", "--n_iterations:501", "--kmeans_interv:20", "--print_interv:100", "--N_results:100", "--rseed:123456", "--inputfile:"+arg_input_file, "--outputfile:"+arg_output_file, "--tc", "--var_string:"+var_string, "--comp_on:"+str(flag_init), "--hsinputfile:"+arg_hs_file)
 
         print(args)
         popen = subprocess.Popen(args)
@@ -116,7 +99,7 @@ def execute_sieve(NA, NB, variables, input_file, input_encoding_file, var_string
 
 	    #READING FILE OUTPUT
 
-        fout=directory_output+output_file
+        fout=directory_output_file+output_file
         with open(fout) as f:
             lines = f.readlines()
 
@@ -215,7 +198,7 @@ def execute_sieve(NA, NB, variables, input_file, input_encoding_file, var_string
         print(new_names)
 
 	# Writing a file.
-        fnew="system_data/system_"+str(iteration)+".txt"
+        fnew = directory_input_file + "system_"+str(iteration)+".txt"
         out_file = open(fnew,"w")
 
 	#length of the vector of the new variables

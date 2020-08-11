@@ -561,7 +561,14 @@ int main(int argc, char * argv[]) {
       comp_on = atoi(value.data());
     }
 
+  } // end for cycle
+
+  if (configuration.hs_input_file_name == "") {
+    std::cout << "hs input file not specified\n";
+    exit(-1);
   }
+
+
   if (var_string == "") {
     std::string temp = "";
     for (int j = 0; j < D; j++) {

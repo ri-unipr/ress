@@ -29,7 +29,7 @@ namespace dci
     pointer_to_data->tc_index = true;
     pointer_to_data->res = 132;
     pointer_to_data->output_file_name = "./results/output-tc-dci-21var.txt";
-    pointer_to_data->hs_input_file_name = "./hsfile-21.txt";
+    //pointer_to_data->hs_input_file_name = "./hsfile-21.txt";
     pointer_to_data->verbose = true;
 
     // cycle all command-line arguments
@@ -199,9 +199,14 @@ namespace dci
         pointer_to_data->error_message = "unknown argument: " + arg;
         return pointer_to_data;
       }
+    } // end for cycle
+
+    if (pointer_to_data->hs_input_file_name == "") {
+      pointer_to_data->error_message = "hs file not specified";
+      return pointer_to_data;
     }
 
-    if (pointer_to_data->input_file_name == "") // check if input file has been specified
+    if (pointer_to_data->input_file_name == "") 
     {
       pointer_to_data->error_message = "input file not specified";
       return pointer_to_data;
