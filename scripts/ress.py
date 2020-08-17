@@ -58,7 +58,7 @@ hs_file = "hsfile-21.txt"
 arg_hs_file = directory_hs_file + hs_file
 
 if not os.path.isfile(arg_hs_file):
-    args = ("../bin/homgen", directory_input_file+input_file_with_encoding, "--hs-out:"+arg_hs_file)
+    args = ("../bin/homgen", directory_input_file+input_file, "--hs-out:"+arg_hs_file)
     popen = subprocess.call(args)
 
 if not SIEVE:
