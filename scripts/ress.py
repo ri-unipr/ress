@@ -63,7 +63,7 @@ if not os.path.isfile(arg_hs_file):
 
 if not SIEVE:
     if (num_var < 22):
-        args = ("../bin/dci", arg_input_file, "--rseed:123456", "--tc", "--res:132", "--out:"+arg_output_file, "--hsinputfile:"+arg_hs_file, "--verbose")
+        args = ("../bin/dci", arg_input_file, "--tc", "--res:132", "--out:"+arg_output_file, "--hsinputfile:"+arg_hs_file, "--verbose")
     else:
         args = ("../bin/kmpso", "--dimension:"+str(NA), "--swarm_size:2000", "--n_seeds:7", "--range:3", "--n_iterations:501", "--kmeans_interv:20", "--print_interv:100", "--N_results:100", "--rseed:123456", "--inputfile:"+arg_input_file, "--outputfile:"+arg_output_file, "--tc", "--var_string:"+var_string, "--comp_on:0", "--hsinputfile:"+arg_hs_file)
         #args = ("../bin/kmpso", "--dimension:"+str(NA), "--swarm_size:2000", "--n_seeds:7", "--range:3", "--n_iterations:501", "--kmeans_interv:20", "--print_interv:100", "--N_results:100", "--rseed:123456", "--inputfile:"+input_file, "--outputfile:"+output_file, "--tc", "--comp_on:0", "--hsinputfile:"+hs_file)

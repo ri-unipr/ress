@@ -71,12 +71,18 @@ namespace dci
       pointer_to_data->delete_input = true;
       else if (arg == "--tc")
       pointer_to_data->tc_index = true;
-      else if (arg == "--si")
-      pointer_to_data->strength_index = true;
-      else if (arg == "--zi")
-      pointer_to_data->zi_index = true;
-      else if (arg == "--si2")
-      pointer_to_data->strength2_index = true;
+      else if (arg == "--si") {
+        pointer_to_data->tc_index = false;
+        pointer_to_data->strength_index = true;
+      }
+      else if (arg == "--zi") {
+        pointer_to_data->tc_index = false;
+        pointer_to_data->zi_index = true;
+      }
+      else if (arg == "--si2") {
+        pointer_to_data->tc_index = false;
+        pointer_to_data->strength2_index = true;
+      }
       /*
       * valued parameters
       */
@@ -201,12 +207,12 @@ namespace dci
       }
     } // end for cycle
 
-    if (pointer_to_data->hs_input_file_name == "") {
+    if ((pointer_to_data->hs_input_file_name == "") && (pointer_to_data->tc_index == true)) {
       pointer_to_data->error_message = "hs file not specified";
       return pointer_to_data;
     }
 
-    if (pointer_to_data->input_file_name == "") 
+    if (pointer_to_data->input_file_name == "")
     {
       pointer_to_data->error_message = "input file not specified";
       return pointer_to_data;

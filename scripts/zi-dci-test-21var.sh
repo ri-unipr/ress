@@ -1,1 +1,1 @@
-../bin/dci ./systems/cstr_21.txt --rand-seed:123456 --zi --res:100 --out:output-zi-dci-21var.txt --verbose
+../bin/dci systems/cstr_21.txt --zi --res:132 --out:results/output-tc-dci-21var.txt --verbose

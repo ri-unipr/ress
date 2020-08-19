@@ -516,10 +516,12 @@ int main(int argc, char * argv[]) {
     {
       chosen_index = "tc";
       configuration.tc_index = true;
+      configuration.zi_index = false;
     }
     else if (arg == "--zi")
     {
       chosen_index = "zi";
+      configuration.tc_index = false;
       configuration.zi_index = true;
     }
     else if (arg.length() >= 2 && (pos = arg.find_first_of(':')) != std::string::npos) // this is a --XXX:VVV parameter
@@ -563,7 +565,7 @@ int main(int argc, char * argv[]) {
 
   } // end for cycle
 
-  if (configuration.hs_input_file_name == "") {
+  if ((configuration.hs_input_file_name == "") && (configuration.tc_index == true)) {
     std::cout << "hs input file not specified\n";
     exit(-1);
   }

@@ -33,6 +33,7 @@ int main(int argc, char** argv) {
       if (configuration->input_file_name != "") // file was already specified, error
       {
         configuration->error_message = "more than one file specified or unknown argument: " + arg;
+        cout << "Error: " << configuration->error_message << "\n\n";
         return -1;
       }
       configuration->input_file_name = arg;
@@ -43,6 +44,7 @@ int main(int argc, char** argv) {
       if (pos == arg.length() - 1) // empty argument value
       {
         configuration->error_message = "no value specified for argument: " + arg;
+        cout << "Error: " << configuration->error_message << "\n\n";
         return -1;
       }
 
@@ -66,6 +68,7 @@ int main(int argc, char** argv) {
       else
       {
         configuration->error_message = "unknown argument: " + name;
+        cout << "Error: " << configuration->error_message << "\n\n";
         return -1;
       }
     }
@@ -75,6 +78,7 @@ int main(int argc, char** argv) {
     else
     {
       configuration->error_message = "unknown argument: " + arg;
+      cout << "Error: " << configuration->error_message << "\n\n";
       return -1;
     }
   }
@@ -82,7 +86,7 @@ int main(int argc, char** argv) {
   configuration->verbose = true;
   configuration->tc_index = true;
   srand(time(NULL));
-  configuration->rand_seed = rand();  
+  configuration->rand_seed = rand();
 
   // store start/end time
   clock_t start = clock(), stop;
