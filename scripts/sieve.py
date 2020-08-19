@@ -88,8 +88,8 @@ def execute_sieve(NA, NB, variables, input_file, input_file_only_data, directory
             popen = subprocess.Popen(args)
             popen.wait()
 
-        if (num_var < 20):
-            args = ("../bin/dci", arg_input_file, "--tc", "--out:"+arg_output_file, "--hsinputfile:"+arg_hs_file)
+        if (num_var < 18):
+            args = ("../bin/dci", arg_input_file, "--tc", "--res:100", "--sv", "--out:"+arg_output_file, "--hsinputfile:"+arg_hs_file)
         else:
             args = ("../bin/kmpso", "--dimension:"+str(num_var), "--swarm_size:2000", "--n_seeds:7", "--range:3", "--n_iterations:501", "--kmeans_interv:20", "--print_interv:100", "--N_results:100", "--rseed:123456", "--inputfile:"+arg_input_file, "--outputfile:"+arg_output_file, "--tc", "--var_string:"+var_string, "--comp_on:"+str(flag_init), "--hsinputfile:"+arg_hs_file)
 
@@ -162,6 +162,7 @@ def execute_sieve(NA, NB, variables, input_file, input_file_only_data, directory
 
 	    #new group in first place
         new_variables_list.append("")
+
 
         for i in range(0,names_list_len):
             if(group_list[i]=="0"):
@@ -264,6 +265,7 @@ def execute_sieve(NA, NB, variables, input_file, input_file_only_data, directory
         for line in lines:
             line=line.replace("\n", "")
             data_list.append(line)
+            #data_list.write(line)
 
 	#number of samples
         data_len=len(data_list)

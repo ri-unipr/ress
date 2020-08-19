@@ -1,5 +1,6 @@
 import subprocess
 import os
+import glob
 from os import path
 from sieve import execute_sieve
 
@@ -11,6 +12,12 @@ if not path.exists(directory_input_file):
         print ("Creation of the directory %s failed" % path)
     else:
         print ("Successfully created the directory %s " % path)
+fileList = glob.glob(directory_input_file+"system_*.txt")
+for filePath in fileList:
+    try:
+        os.remove(filePath)
+    except:
+        print("Error while deleting file : ", filePath)
 
 directory_hs_file = "hsfiles/"
 if not path.exists(directory_hs_file):
@@ -20,6 +27,12 @@ if not path.exists(directory_hs_file):
         print ("Creation of the directory %s failed" % path)
     else:
         print ("Successfully created the directory %s " % path)
+fileList = glob.glob(directory_hs_file+"hsfile_*.txt")
+for filePath in fileList:
+    try:
+        os.remove(filePath)
+    except:
+        print("Error while deleting file : ", filePath)
 
 directory_output_file = "results/"
 if not path.exists(directory_output_file):
@@ -29,6 +42,12 @@ if not path.exists(directory_output_file):
         print ("Creation of the directory %s failed" % path)
     else:
         print ("Successfully created the directory %s " % path)
+fileList = glob.glob(directory_output_file+"result_*.txt")
+for filePath in fileList:
+    try:
+        os.remove(filePath)
+    except:
+        print("Error while deleting file : ", filePath)
 
 
 SIEVE = True
@@ -62,8 +81,8 @@ if not os.path.isfile(arg_hs_file):
     popen = subprocess.call(args)
 
 if not SIEVE:
-    if (num_var < 22):
-        args = ("../bin/dci", arg_input_file, "--tc", "--res:132", "--out:"+arg_output_file, "--hsinputfile:"+arg_hs_file, "--verbose")
+    if (num_var < 18):
+        args = ("../bin/dci", arg_input_file, "--tc", "--res:100", "--out:"+arg_output_file, "--hsinputfile:"+arg_hs_file, "--verbose")
     else:
         args = ("../bin/kmpso", "--dimension:"+str(NA), "--swarm_size:2000", "--n_seeds:7", "--range:3", "--n_iterations:501", "--kmeans_interv:20", "--print_interv:100", "--N_results:100", "--rseed:123456", "--inputfile:"+arg_input_file, "--outputfile:"+arg_output_file, "--tc", "--var_string:"+var_string, "--comp_on:0", "--hsinputfile:"+arg_hs_file)
         #args = ("../bin/kmpso", "--dimension:"+str(NA), "--swarm_size:2000", "--n_seeds:7", "--range:3", "--n_iterations:501", "--kmeans_interv:20", "--print_interv:100", "--N_results:100", "--rseed:123456", "--inputfile:"+input_file, "--outputfile:"+output_file, "--tc", "--comp_on:0", "--hsinputfile:"+hs_file)

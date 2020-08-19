@@ -31,6 +31,7 @@ namespace dci
     pointer_to_data->output_file_name = "./results/output-tc-dci-21var.txt";
     //pointer_to_data->hs_input_file_name = "./hsfile-21.txt";
     pointer_to_data->verbose = true;
+    pointer_to_data->sieving = false;
 
     // cycle all command-line arguments
     for (int i = 1; i < argc; ++i)
