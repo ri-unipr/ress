@@ -25,9 +25,9 @@ namespace dci
 
     // default values
     pointer_to_data->input_file_name = "./systems/cstr_21.txt";
-    pointer_to_data->rand_seed = 123456;
+    //pointer_to_data->rand_seed = 123456;
     pointer_to_data->tc_index = true;
-    pointer_to_data->res = 132;
+    pointer_to_data->res = 100;
     pointer_to_data->output_file_name = "./results/output-tc-dci-21var.txt";
     //pointer_to_data->hs_input_file_name = "./hsfile-21.txt";
     pointer_to_data->verbose = true;
@@ -56,34 +56,38 @@ namespace dci
       /*
       * flags
       */
-      else if (arg == "--device-info") // turn on device info flag
-      pointer_to_data->show_device_stats = true;
+      //else if (arg == "--device-info") // turn on device info flag
+      //pointer_to_data->show_device_stats = true;
       else if (arg == "--verbose") // turn on verbose flag
       pointer_to_data->verbose = true;
-      else if (arg == "--tune") // turn on tuning flag
-      pointer_to_data->tune = true;
-      else if (arg == "--profile") // turn on profiling flag
-      pointer_to_data->profile = true;
-      else if (arg == "--silent") // turn on silent flag
-      pointer_to_data->silent = true;
+      //else if (arg == "--tune") // turn on tuning flag
+      //pointer_to_data->tune = true;
+      //else if (arg == "--profile") // turn on profiling flag
+      //pointer_to_data->profile = true;
+      //else if (arg == "--silent") // turn on silent flag
+      //pointer_to_data->silent = true;
       else if (arg == "--sv") // turn on sieving
       pointer_to_data->sieving = true;
-      else if (arg == "--delete-input") // delete input file after reading
-      pointer_to_data->delete_input = true;
+      //else if (arg == "--delete-input") // delete input file after reading
+      //pointer_to_data->delete_input = true;
       else if (arg == "--tc")
       pointer_to_data->tc_index = true;
+      /*
       else if (arg == "--si") {
         pointer_to_data->tc_index = false;
         pointer_to_data->strength_index = true;
       }
+      */
       else if (arg == "--zi") {
         pointer_to_data->tc_index = false;
         pointer_to_data->zi_index = true;
       }
+      /*
       else if (arg == "--si2") {
         pointer_to_data->tc_index = false;
         pointer_to_data->strength2_index = true;
       }
+      */
       /*
       * valued parameters
       */
@@ -99,9 +103,9 @@ namespace dci
         std::string name = arg.substr(0, pos);
         std::string value = arg.substr(pos + 1);
 
-        if (name ==  "--out")
+        if (name ==  "--output_file")
         pointer_to_data->output_file_name = value;
-        else if (name == "--hsinputfile")
+        else if (name == "--hs_input_file")
         pointer_to_data->hs_input_file_name = value;
         //else if (name == "--hs-out")
         //pointer_to_data->hs_output_file_name = value;
@@ -111,8 +115,9 @@ namespace dci
         //pointer_to_data->hs_data_output_file_name = value;
         else if (name == "--sv-out")
         pointer_to_data->sieving_out = value;
-        else if (name == "--metric")
-        pointer_to_data->metric = value;
+        //else if (name == "--metric")
+        //pointer_to_data->metric = value;
+        /*
         else if (name == "--rseed")
         {
           if ((pointer_to_data->rand_seed = std::atoi(value.data())) == 0)
@@ -121,7 +126,8 @@ namespace dci
             return pointer_to_data;
           }
         }
-        else if (name == "--res")
+        */
+        else if (name == "--n_results")
         {
           if ((pointer_to_data->res = std::atoi(value.data())) == 0)
           {
@@ -232,24 +238,24 @@ namespace dci
   void printUsage(char* command)
   {
 
-    std::cout << "USAGE:\n" << command << " input_file [--out:file] [--hs-in:file] [--hs-out:file] [--rand-seed:number] [--res:number] [--device-info] [--verbose]\n\n";
+    std::cout << "USAGE:\n" << command << " input_file --output_file:file --hs_input_file:file --n_results:number [--verbose]\n\n";
     std::cout << "PARAMETERS:\n";
     std::cout << "input_file           path to input data file (required)\n";
     std::cout << "--tc                 use the statistical index Tc as index\n";
     std::cout << "--zi                 use ZI = 2*M*I - g/ sqrt(2*g) as index  (Default)\n";
-    std::cout << "--si                 use the strength index SI = 2*M*I/g as index\n";
-    std::cout << "--si2                use the strength index SI2 = I/Imax as index\n";
-    std::cout << "--out:file           writes results to file\n";
+    //std::cout << "--si                 use the strength index SI = 2*M*I/g as index\n";
+    //std::cout << "--si2                use the strength index SI2 = I/Imax as index\n";
+    std::cout << "--output_file:file   writes results to file\n";
     std::cout << "--nb:file            number of parallel execution blocks (default 128)\n";
     std::cout << "--nt:file            number of threads per block (default 8)\n";
-    std::cout << "--hsinputfile:file   reads homogeneous system stats from file\n";
+    std::cout << "--hs_input_file:file reads homogeneous system stats from file\n";
     //std::cout << "--hs-out:file        writes homogeneous system stats to file\n";
     //std::cout << "--hs-data-in:file    reads homogeneous system data from file\n";
     //std::cout << "--hs-data-out:file   writes homogeneous system data to file\n";
     //std::cout << "--hs-count:number    number of clusters to be used in homogeneous system statistics computation for each cluster size\n";
-    std::cout << "--metric:value       metric used to rank clusters ('rel' for relevance index, 'int' for integration; default: 'rel')\n";
-    std::cout << "--rseed:number       sets random number generator seed\n";
-    std::cout << "--res:number         sets number of results to keep (default 30)\n";
+    //std::cout << "--metric:value       metric used to rank clusters ('rel' for relevance index, 'int' for integration; default: 'rel')\n";
+    //std::cout << "--rseed:number       sets random number generator seed\n";
+    std::cout << "--n_results:number   sets number of results to keep (default 30)\n";
     std::cout << "--sv                 applies sieving algorithm\n";
     std::cout << "--sv-max:number      sets number of results to keep internally (default 100000). Only with --sv option\n";
     std::cout << "--sv-mode:number     sets sieving mode for super-cluster selection (1 = fixed | 2 = differential | 3 = mean | 4 = manual, default 2)\n";
@@ -257,12 +263,12 @@ namespace dci
     std::cout << "--sv-diff:number     sets min difference (%) for differential sieving mode (differential mode, default 100)\n";
     std::cout << "--sv-diff-num:number sets number of clusters to search for differential sieving mode (differential mode, default 5)\n";
     std::cout << "--sv-out:file        sets output file for new system data after sieving\n";
-    std::cout << "--delete-input       deletes input file after reading\n";
-    std::cout << "--device-info        writes device statistics at startup\n";
+    //std::cout << "--delete-input       deletes input file after reading\n";
+    //std::cout << "--device-info        writes device statistics at startup\n";
     std::cout << "--verbose            turn on debug messages\n";
-    std::cout << "--silent             turn off all output except final results (overrides verbose flag)\n";
-    std::cout << "--tune               turn on function tuning\n";
-    std::cout << "--profile            turn on CUDA profiling\n";
+    //std::cout << "--silent             turn off all output except final results (overrides verbose flag)\n";
+    //std::cout << "--tune               turn on function tuning\n";
+    //std::cout << "--profile            turn on CUDA profiling\n";
     std::cout << "\n";
 
   }
@@ -277,12 +283,12 @@ namespace dci
     std::cout << "N. blocks            " << configuration.num_blocks << '\n';
     std::cout << "N. threads           " << configuration.num_threads << '\n';
     std::cout << "HS input file        " << configuration.hs_input_file_name << '\n';
-    std::cout << "HS output file       " << configuration.hs_output_file_name << '\n';
-    std::cout << "HS data input file   " << configuration.hs_data_input_file_name << '\n';
-    std::cout << "HS data output file  " << configuration.hs_data_output_file_name << '\n';
+    //std::cout << "HS output file       " << configuration.hs_output_file_name << '\n';
+    //std::cout << "HS data input file   " << configuration.hs_data_input_file_name << '\n';
+    //std::cout << "HS data output file  " << configuration.hs_data_output_file_name << '\n';
     std::cout << "HS sample count      " << configuration.hs_count << '\n';
-    std::cout << "Metric               " << configuration.metric << '\n';
-    std::cout << "Random seed          " << configuration.rand_seed << '\n';
+    //std::cout << "Metric               " << configuration.metric << '\n';
+    //std::cout << "Random seed          " << configuration.rand_seed << '\n';
     std::cout << "Results to keep      " << configuration.res << '\n';
     std::cout << "Use sieving          " << configuration.sieving << '\n';
     std::cout << "Results for sieving  " << configuration.sieving_max << '\n';
@@ -291,12 +297,12 @@ namespace dci
     std::cout << "Sieving keep top     " << configuration.sieving_keep_top << '\n';
     std::cout << "Sieving diff         " << configuration.sieving_diff << '\n';
     std::cout << "Sieving diff num     " << configuration.sieving_diff_num << '\n';
-    std::cout << "Delete input file    " << configuration.delete_input << '\n';
-    std::cout << "Show device info     " << configuration.show_device_stats << '\n';
+    //std::cout << "Delete input file    " << configuration.delete_input << '\n';
+    //std::cout << "Show device info     " << configuration.show_device_stats << '\n';
     std::cout << "Show debug messages  " << configuration.verbose << '\n';
-    std::cout << "Silent               " << configuration.silent << '\n';
-    std::cout << "Function tuning      " << configuration.tune << '\n';
-    std::cout << "CUDA profiling       " << configuration.profile << '\n';
+    //std::cout << "Silent               " << configuration.silent << '\n';
+    //std::cout << "Function tuning      " << configuration.tune << '\n';
+    //std::cout << "CUDA profiling       " << configuration.profile << '\n';
   }
 
 }

@@ -10,6 +10,17 @@
 using namespace std;
 
 /*
+* Prints usage
+*/
+void printUsage(char* command)
+{
+  std::cout << "USAGE:\n" << command << " input_file --hs_output_file:file \n\n";
+  std::cout << "PARAMETERS:\n";
+  std::cout << "--hs_output_file       path to the homogeneous system file to be created\n";
+  std::cout << "\n";
+}
+
+/*
 * Entry point: retrieves configuration from command-line parameters
 * and runs main application if a good configuration was supplied.
 */
@@ -19,6 +30,14 @@ int main(int argc, char** argv) {
   //dci::RunInfo_p configuration = dci::processCommandLine(argc, argv);
   dci::RunInfo_p configuration(new dci::RunInfo());
   int pos;
+
+  if (argc < 2) // bad command line parameters, print error and usage
+  {
+    configuration->error_message = "no arguments specified";
+    cout << "Error: " << configuration->error_message << "\n\n";
+    printUsage(argv[0]);
+    return -1;
+  }
 
   // cycle all command-line arguments
   for (int i = 1; i < argc; ++i)
@@ -34,6 +53,7 @@ int main(int argc, char** argv) {
       {
         configuration->error_message = "more than one file specified or unknown argument: " + arg;
         cout << "Error: " << configuration->error_message << "\n\n";
+        printUsage(argv[0]);
         return -1;
       }
       configuration->input_file_name = arg;
@@ -45,16 +65,17 @@ int main(int argc, char** argv) {
       {
         configuration->error_message = "no value specified for argument: " + arg;
         cout << "Error: " << configuration->error_message << "\n\n";
+        printUsage(argv[0]);
         return -1;
       }
 
       std::string name = arg.substr(0, pos);
       std::string value = arg.substr(pos + 1);
 
-      if (name == "--hs-out")
+      if (name == "--hs_output_file")
       configuration->hs_output_file_name = value;
-      else if (name == "--hs-data-out")
-      configuration->hs_data_output_file_name = value;
+      //else if (name == "--hs-data-out")
+      //configuration->hs_data_output_file_name = value;
       /*
       else if (name == "--rand-seed")
       {

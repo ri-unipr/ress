@@ -438,22 +438,22 @@ void identify_niches()
 */
 void printUsage(char* command)
 {
-  std::cout << "USAGE:\n" << command << " input_file [--out:file] [--hs-in:file] [--hs-out:file] [--rand-seed:number] [--res:number] [--device-info] [--verbose]\n\n";
+  std::cout << "USAGE:\n" << command << " input_file --output_file:file --hs_input_file:file [--verbose]\n\n";
   std::cout << "PARAMETERS:\n";
   std::cout << "--tc                    use the statistical index Tc as index\n";
   std::cout << "--zi                    use ZI = 2*M*I - g/ sqrt(2*g) as index (default)\n";
-  std::cout << "--dimension:number      search space dimension (default 28)\n";
+  std::cout << "--dimension:number      search space dimension (default 21)\n";
   std::cout << "--swarm_size:number     swarm size (default 2000)\n";
   std::cout << "--n_seeds:number        number seeds (default 7)\n";
   std::cout << "--range:number          range (default 3)\n";
   std::cout << "--n_iterations:number   number of iterations (default 501)\n";
   std::cout << "--kmeans_interv:number  intervals for identifying niches (default 20)\n";
   std::cout << "--print_interv:number   print interval (default 100)\n";
-  std::cout << "--N_results:number      number of results to keep (default 100)\n";
+  std::cout << "--n_results:number      number of results to keep (default 100)\n";
   std::cout << "--rseed:number          random number generator seed (default 123456)\n";
-  std::cout << "--inputfile:string      path to the input file\n";
-  std::cout << "--outputfile:string     path to the output file\n";
-  std::cout << "--hsinputfile:string    path to the homogeneous system input file\n";
+  std::cout << "--input_file:string     path to the input file\n";
+  std::cout << "--output_file:string    path to the output file\n";
+  std::cout << "--hs_input_file:string  path to the homogeneous system input file\n";
   std::cout << "--var_string:string     list of variable names (ordered like in the input file)\n";
   std::cout << "--comp_on:number        show each group composition in  output file (0 = no | 1 = yes | default 0)\n";
   std::cout << "\n";
@@ -477,7 +477,7 @@ int main(int argc, char * argv[]) {
   dci::RunInfo configuration = dci::RunInfo();
 
   // default values
-  D = 28;
+  D = 21;
   S = 2000;
   K = 7;
   x = 3;
@@ -502,9 +502,10 @@ int main(int argc, char * argv[]) {
 
   if (argc < 2) // bad command line parameters, print error and usage
   {
+    configuration.error_message = "no arguments specified";
     cout << "Error: " << configuration.error_message << "\n\n";
     printUsage(argv[0]);
-    return 1;
+    return -1;
   }
 
   // cycle all command-line arguments
@@ -543,17 +544,17 @@ int main(int argc, char * argv[]) {
       c1 = atoi(value.data());
       else if (name == "--print_interv")
       interv = atoi(value.data());
-      else if (name == "--N_results")
+      else if (name == "--n_results")
       N = atoi(value.data());
       else if (name == "--rseed")
       rseed = atoi(value.data());
       //else if (name == "--hseed")
       //hseed = atoi(value.data());
-      else if (name == "--inputfile")
+      else if (name == "--input_file")
       configuration.input_file_name = value;
-      else if (name == "--outputfile")
+      else if (name == "--output_file")
       output_file = value;
-      else if (name == "--hsinputfile")
+      else if (name == "--hs_input_file")
       configuration.hs_input_file_name = value;
       //else if (name == "--hsoutputfile")
       //configuration.hs_output_file_name = value;
@@ -566,10 +567,10 @@ int main(int argc, char * argv[]) {
   } // end for cycle
 
   if ((configuration.hs_input_file_name == "") && (configuration.tc_index == true)) {
-    std::cout << "hs input file not specified\n";
-    exit(-1);
+    configuration.error_message = "no hs input file specified";
+    cout << "Error: " << configuration.error_message << "\n\n";
+    return -1;
   }
-
 
   if (var_string == "") {
     std::string temp = "";
