@@ -13,29 +13,29 @@ On Linux machines:
 The following parameters must be passed as arguments to homgen:
 
 * path/to/inputfile
-* --hs-out:path/to/hsfile to specify path and name of the homogeneous system file to be created
+* --hs_output_file:path/to/hsfile to specify the path to the homogeneous system file to be created
 
 The following parameters must be passed as arguments to dci:
 * path/to/inputfile
 * --tc or --zi, depending on the index that one wants to use (Tc or zI)
-* --res:N to specify the number of reported results
-* --out:path/to/outputfile
-* --hsinputfile:path/to/hsfile to specify the path to the file of the homogeneous system (created by means of homgen)
+* --n_results:number to specify the number of reported results
+* --output_file:path/to/outputfile
+* --hs_input_file:path/to/hsfile to specify the path to the file of the homogeneous system (created by means of homgen)
 
 The following paramaters must be defined and passed as arguments to kmpso:
-* --dimension:D to specify the search space dimension
-* --swarm_size:S to specify the swarm size  
-* --n_seeds:K to specify the number of seeds  
-* --range:x to specify the range  
-* --n_iterations:T to specify the number of iterations
-* --kmeans_interv:c1 to specify the kmeans interval
-* --Print_interrv:interv to specify the print interval  
-* --n_results:N to specify the number of reported results
-* --rseed:r to specify the seed for the pseudorandom number generator
-* --inputfile:path/to/inputfile
-* --outputfile:path/to/outputfile
-* --hsinputfile:path/to/hsfile to specify the path to the file of the homogeneous system (created by means of homgen)
 * --tc or --zi, depending on the index that one wants to use (Tc or zI)
+* --dimension:number to specify the search space dimension
+* --swarm_size:number to specify the swarm size  
+* --n_seeds:number to specify the number of seeds  
+* --range:number to specify the range  
+* --n_iterations:number to specify the number of iterations
+* --kmeans_interv:number to specify the kmeans interval
+* --print_interv:number to specify the print interval  
+* --n_results:number to specify the number of reported results
+* --rseed:number to specify the seed for the pseudorandom number generator
+* --input_file:path/to/inputfile
+* --output_file:path/to/outputfile
+* --hs_input_file:path/to/hsfile to specify the path to the file of the homogeneous system (created by means of homgen)
 * --comp_on:0/1
 
 To run the tools, edit and use the ress.py script (in the scripts/ folder):
