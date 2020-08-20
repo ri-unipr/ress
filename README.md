@@ -12,7 +12,8 @@ On Linux machines:
 
 The following parameters must be passed as arguments to homgen:
 
-* 
+* path/to/inputfile
+* --hs-out:path/to/hsfile to specify path and name of the homogeneous system file to be created
 
 The following parameters must be passed as arguments to dci:
 * path/to/inputfile
@@ -37,6 +38,6 @@ The following paramaters must be defined and passed as arguments to kmpso:
 * --tc or --zi, depending on the index that one wants to use (Tc or zI)
 * --comp_on:0/1
 
-To run the tools, edit and use Python the ress.py script (in the scripts/ folder):
+To run the tools, edit and use the ress.py script (in the scripts/ folder):
 
 * python ress.py
