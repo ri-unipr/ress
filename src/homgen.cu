@@ -20,6 +20,15 @@ void printUsage(char* command)
   std::cout << "\n";
 }
 
+bool exists_test(const std::string& name) {
+    if (FILE *file = fopen(name.c_str(), "r")) {
+        fclose(file);
+        return true;
+    } else {
+        return false;
+    }
+}
+
 /*
 * Entry point: retrieves configuration from command-line parameters
 * and runs main application if a good configuration was supplied.
@@ -56,7 +65,14 @@ int main(int argc, char** argv) {
         printUsage(argv[0]);
         return -1;
       }
-      configuration->input_file_name = arg;
+      if (!exists_test(arg))
+      {
+        configuration->error_message = "the input file does not exist: " + arg;
+        cout << "Error: " << configuration->error_message << "\n\n";
+        return -1;
+      }
+      else
+        configuration->input_file_name = arg;
     }
     else if (arg.length() >= 2 && (pos = arg.find_first_of(':')) != std::string::npos) // this is a --XXX:VVV parameter
     {

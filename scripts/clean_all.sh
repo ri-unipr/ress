@@ -1,3 +1,5 @@
+#bash
+
 cd results
 for i in result_*
 do
@@ -15,6 +17,7 @@ do
     if test -f $i
     then	
        rm $i
+	echo "Removed $i "
     fi       
 done
 cd ..
@@ -25,6 +28,19 @@ do
     if test -f $i
     then
        rm $i
+	echo "Removed $i "
+    fi       
+done
+cd ..
+
+
+cd hsfiles
+for i in hsfile_*
+do
+    if test -f $i
+    then
+       rm $i
+	echo "Removed $i "
     fi       
 done
 cd ..
