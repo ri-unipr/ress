@@ -14,8 +14,9 @@ using namespace std;
 */
 void printUsage(char* command)
 {
-  std::cout << "USAGE:\n" << command << " input_file --hs_output_file:file \n\n";
+  std::cout << "USAGE:\n" << command << " --input_file:file --hs_output_file:file \n\n";
   std::cout << "PARAMETERS:\n";
+  std::cout << "--input_file           path to the system file to be analyzed\n";
   std::cout << "--hs_output_file       path to the homogeneous system file to be created\n";
   std::cout << "\n";
 }
@@ -56,6 +57,7 @@ int main(int argc, char** argv) {
     /*
     * input filename retrieval
     */
+    /*
     if (arg.length() >= 2 && (arg[0] != '-' || arg[1] != '-')) // this is a filename
     {
       if (configuration->input_file_name != "") // file was already specified, error
@@ -74,7 +76,9 @@ int main(int argc, char** argv) {
       else
         configuration->input_file_name = arg;
     }
-    else if (arg.length() >= 2 && (pos = arg.find_first_of(':')) != std::string::npos) // this is a --XXX:VVV parameter
+    */
+    //else if (arg.length() >= 2 && (pos = arg.find_first_of(':')) != std::string::npos) // this is a --XXX:VVV parameter
+    if ((pos = arg.find_first_of(':')) != std::string::npos) // this is a --XXX:VVV parameter
     {
 
       if (pos == arg.length() - 1) // empty argument value
@@ -88,8 +92,19 @@ int main(int argc, char** argv) {
       std::string name = arg.substr(0, pos);
       std::string value = arg.substr(pos + 1);
 
-      if (name == "--hs_output_file")
+      if (name ==  "--input_file") {
+        if (!exists_test(value))
+        {
+          configuration->error_message = "the file does not exist: " + arg;
+          cout << "Error: " << configuration->error_message << "\n\n";
+          return -1;
+        }
+        else
+        configuration->input_file_name = value;
+      }
+      else if (name == "--hs_output_file")
       configuration->hs_output_file_name = value;
+
       //else if (name == "--hs-data-out")
       //configuration->hs_data_output_file_name = value;
       /*
@@ -101,13 +116,14 @@ int main(int argc, char** argv) {
           return -1;
         }
       }
-      */
+
       else
       {
         configuration->error_message = "unknown argument: " + name;
         cout << "Error: " << configuration->error_message << "\n\n";
         return -1;
       }
+      */
     }
     /*
     * unknown parameters

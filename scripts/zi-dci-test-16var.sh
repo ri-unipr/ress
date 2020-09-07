@@ -1,1 +1,1 @@
-../bin/dci ./system_data/system_0.txt --rand-seed:123456 --zi --res:100 --out:output-zi-dci-16var.txt --verbose
+../bin/dci ./systems/CSTR16_00.txt --zi --n_results:100 --output_file:./results/output-zi-dci-16var.txt --verbose

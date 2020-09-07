@@ -1,1 +1,1 @@
-../bin/dci ./system_data/system_0.txt --rand-seed:123456 --tc --res:100 --out:output-tc-dci-16var.txt --hs-out:hsfile-16.txt --verbose --hs-data-out:hsdata-16.txt
+../bin/dci --tc --input_file:systems/CSTR16_00.txt --n_results:132 --output_file:output-tc-dci-16var.txt --hs_input_file:hsfiles/hsfile-16.txt --verbose

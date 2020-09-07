@@ -24,7 +24,7 @@ namespace dci
     int pos;
 
     // default values
-    pointer_to_data->input_file_name = "./systems/cstr_21.txt";
+    pointer_to_data->input_file_name = "";
     //pointer_to_data->rand_seed = 123456;
     pointer_to_data->tc_index = true;
     pointer_to_data->res = 100;
@@ -41,8 +41,9 @@ namespace dci
       /*
       * input filename retrieval
       */
-      if (arg.length() >= 2 && (arg[0] != '-' || arg[1] != '-')) // this is a filename
-      {
+
+      //if (arg.length() >= 2 && (arg[0] != '-' || arg[1] != '-')) // this is a filename
+      //{
         /*
         if (pointer_to_data->input_file_name != "") // file was already specified, error
         {
@@ -50,15 +51,15 @@ namespace dci
           return pointer_to_data;
         }
         */
-        pointer_to_data->input_file_name = arg;
-      }
+        //pointer_to_data->input_file_name = arg;
+      //}
 
       /*
       * flags
       */
       //else if (arg == "--device-info") // turn on device info flag
       //pointer_to_data->show_device_stats = true;
-      else if (arg == "--verbose") // turn on verbose flag
+      if (arg == "--verbose") // turn on verbose flag
       pointer_to_data->verbose = true;
       //else if (arg == "--tune") // turn on tuning flag
       //pointer_to_data->tune = true;
@@ -91,7 +92,8 @@ namespace dci
       /*
       * valued parameters
       */
-      else if (arg.length() >= 2 && (pos = arg.find_first_of(':')) != std::string::npos) // this is a --XXX:VVV parameter
+      //else if (arg.length() >= 2 && (pos = arg.find_first_of(':')) != std::string::npos) // this is a --XXX:VVV parameter
+      else if ((pos = arg.find_first_of(':')) != std::string::npos) // this is a --XXX:VVV parameter
       {
 
         if (pos == arg.length() - 1) // empty argument value
@@ -103,7 +105,9 @@ namespace dci
         std::string name = arg.substr(0, pos);
         std::string value = arg.substr(pos + 1);
 
-        if (name ==  "--output_file")
+        if (name ==  "--input_file")
+        pointer_to_data->input_file_name = value;
+        else if (name ==  "--output_file")
         pointer_to_data->output_file_name = value;
         else if (name == "--hs_input_file")
         pointer_to_data->hs_input_file_name = value;
@@ -214,8 +218,13 @@ namespace dci
       }
     } // end for cycle
 
+    if (pointer_to_data->input_file_name == "") {
+      pointer_to_data->error_message = "no input file specified";
+      return pointer_to_data;
+    }
+
     if ((pointer_to_data->hs_input_file_name == "") && (pointer_to_data->tc_index == true)) {
-      pointer_to_data->error_message = "hs file not specified";
+      pointer_to_data->error_message = "no hs input file specified";
       return pointer_to_data;
     }
 
@@ -238,9 +247,9 @@ namespace dci
   void printUsage(char* command)
   {
 
-    std::cout << "USAGE:\n" << command << " input_file --output_file:file --hs_input_file:file --n_results:number [--verbose]\n\n";
+    std::cout << "USAGE:\n" << command << " --input_file:file --output_file:file --hs_input_file:file --n_results:number [--verbose]\n\n";
     std::cout << "PARAMETERS:\n";
-    std::cout << "input_file           path to input data file (required)\n";
+    std::cout << "--input_file:file           path to input data file (required)\n";
     std::cout << "--tc                 use the statistical index Tc as index\n";
     std::cout << "--zi                 use ZI = 2*M*I - g/ sqrt(2*g) as index  (Default)\n";
     //std::cout << "--si                 use the strength index SI = 2*M*I/g as index\n";

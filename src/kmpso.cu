@@ -438,7 +438,7 @@ void identify_niches()
 */
 void printUsage(char* command)
 {
-  std::cout << "USAGE:\n" << command << " input_file --output_file:file --hs_input_file:file [--verbose]\n\n";
+  std::cout << "USAGE:\n" << command << " --input_file:file --output_file:file --hs_input_file:file [--verbose]\n\n";
   std::cout << "PARAMETERS:\n";
   std::cout << "--tc                    use the statistical index Tc as index\n";
   std::cout << "--zi                    use ZI = 2*M*I - g/ sqrt(2*g) as index (default)\n";
@@ -487,7 +487,7 @@ int main(int argc, char * argv[]) {
   N = 100;
   rseed = 123456;
   //hseed = rseed;
-  configuration.input_file_name = "./systems/cstr_28.txt";
+  configuration.input_file_name = "";
   string output_file = "./output-zi-kmpso.txt";
   configuration.hs_input_file_name = "";
   //configuration.hs_output_file_name = "";
@@ -565,6 +565,12 @@ int main(int argc, char * argv[]) {
     }
 
   } // end for cycle
+
+  if (configuration.input_file_name == "") {
+    configuration.error_message = "no input file specified";
+    cout << "Error: " << configuration.error_message << "\n\n";
+    return -1;
+  }
 
   if ((configuration.hs_input_file_name == "") && (configuration.tc_index == true)) {
     configuration.error_message = "no hs input file specified";
