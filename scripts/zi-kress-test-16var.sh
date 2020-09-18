@@ -1,0 +1,1 @@
+../bin/kress --input_file:./systems/CSTR_16_00.txt --dimension:16 --swarm_size:2000 --n_seeds:7 --range:3 --n_iterations:501 --kmeans_interv:20 --print_interv:100 --N_results:100 --rseed:123456 --output_file:./results/output-zi-kmpso-16var.txt --zi --var_string:"v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16" --comp_on:0

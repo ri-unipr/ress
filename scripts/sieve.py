@@ -83,15 +83,15 @@ def execute_sieve(NA, NB, variables, input_file, input_file_only_data, directory
         print(arg_hs_file)
 
         if (iteration > 1):
-            args = ("../bin/homgen", arg_input_file, "--hs_output_file:"+arg_hs_file)
+            args = ("../bin/homgen", "--input_file:"+arg_input_file, "--hs_output_file:"+arg_hs_file)
             print(args)
             popen = subprocess.Popen(args)
             popen.wait()
 
         if (num_var < 18):
-            args = ("../bin/dci", "--input_file:"+arg_input_file, "--tc", "--n_results:100", "--sv", "--output_file:"+arg_output_file, "--hs_input_file:"+arg_hs_file)
+            args = ("../bin/eress", "--input_file:"+arg_input_file, "--tc", "--n_results:100", "--sv", "--output_file:"+arg_output_file, "--hs_input_file:"+arg_hs_file)
         else:
-            args = ("../bin/kmpso", "--dimension:"+str(num_var), "--swarm_size:2000", "--n_seeds:7", "--range:3", "--n_iterations:501", "--kmeans_interv:20", "--print_interv:100", "--n_results:100", "--rseed:123456", "--input_file:"+arg_input_file, "--output_file:"+arg_output_file, "--tc", "--var_string:"+var_string, "--comp_on:"+str(flag_init), "--hs_input_file:"+arg_hs_file)
+            args = ("../bin/kress", "--dimension:"+str(num_var), "--swarm_size:2000", "--n_seeds:7", "--range:3", "--n_iterations:501", "--kmeans_interv:20", "--print_interv:100", "--n_results:100", "--rseed:123456", "--input_file:"+arg_input_file, "--output_file:"+arg_output_file, "--tc", "--var_string:"+var_string, "--comp_on:"+str(flag_init), "--hs_input_file:"+arg_hs_file)
 
         print(args)
         popen = subprocess.Popen(args)

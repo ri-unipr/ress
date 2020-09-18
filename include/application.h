@@ -413,7 +413,7 @@ namespace dci
     // print device info if necessary
     if (conf->show_device_stats) dci::CUDAUtils::printDeviceInfo();
 
-    not_silent_cout <<"Parallel DCI (C++ and CUDA)" << endl;
+    //not_silent_cout <<"Parallel DCI (C++ and CUDA)" << endl;
     not_silent_cout << "Sample size                 " << N << " (" << NA << " agents)\n";
     not_silent_cout << "Samples                     " << M << "\n";
     not_silent_cout << "Clusters                    " << L << "\n";

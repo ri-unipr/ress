@@ -6,10 +6,9 @@ DDIR = ./device
 CUDADIR = /usr/local/cuda/samples/common/inc/
 CC = nvcc
 
-DCIFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -O2 -I $(IDIR)
+ERESSFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -O2 -I $(IDIR)
 HOMGENFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -O2 -I $(IDIR)
-QUERYFLAGS = -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -I $(CUDADIR) -I $(IDIR)
-KMPSOFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -O2 -I $(IDIR)
+KRESSFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -O2 -I $(IDIR)
 TESTFLAGS = -use_fast_math -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES --std=c++11 -O2 -I $(IDIR)
 
 _CLUSTDESCRDEPS = cluster_descriptor.h
@@ -36,47 +35,37 @@ _COMMANDLINESRC = command_line.cu
 COMMANDLINESRC = $(patsubst %,$(SDIR)/%,$(_COMMANDLINESRC))
 COMMANDLINEOBJ = command_line.o
 
-_DCISRC = dci.cu
-DCISRC = $(patsubst %,$(SDIR)/%,$(_DCISRC))
-DCIOBJ = dci.o
+_ERESSSRC = eress.cu
+ERESSSRC = $(patsubst %,$(SDIR)/%,$(_ERESSSRC))
+ERESSOBJ = eress.o
 
 _HOMGENSRC = homgen.cu
 HOMGENSRC = $(patsubst %,$(SDIR)/%,$(_HOMGENSRC))
 HOMGENOBJ = homgen.o
 
-_QUERYDEPS = helper_cuda.h
-QUERYDEPS = $(patsubst %,$(CUDADIR)/%,$(_QUERYDEPS))
-_QUERYSRC = device_query.cpp
-QUERYSRC = $(patsubst %,$(DDIR)/%,$(_QUERYSRC))
-QUERYOBJ = device_query.o
-
-_KMPSOSRC = kmpso.cu
-KMPSOSRC = $(patsubst %,$(SDIR)/%,$(_KMPSOSRC))
-KMPSOOBJ = kmpso.o
-
-_TESTSRC = dci_test.cu
-TESTSRC = $(patsubst %,$(SDIR)/%,$(_TESTSRC))
-TESTOBJ = dci_test.o
+_KRESSSRC = kress.cu
+KRESSSRC = $(patsubst %,$(SDIR)/%,$(_KRESSSRC))
+KRESSOBJ = kress.o
 
 $(CLUSTDESCROBJ): $(CLUSTDESCRSRC) $(CLUSTDESCRDEPS)
-	$(CC) -c -o $@ $< $(DCIFLAGS)
+	$(CC) -c -o $@ $< $(ERESSFLAGS)
 
 $(CLUSTUTILSOBJ): $(CLUSTUTILSSRC) $(CLUSTUTILSDEPS)
-	$(CC) -c -o $@ $< $(DCIFLAGS)
+	$(CC) -c -o $@ $< $(ERESSFLAGS)
 
 $(FILEUTILSOBJ): $(FILEUTILSSRC) $(FILEUTILSDEPS)
-	$(CC) -c -o $@ $< $(DCIFLAGS)
+	$(CC) -c -o $@ $< $(ERESSFLAGS)
 
 $(COMMANDLINEOBJ): $(COMMANDLINESRC) $(COMMANDLINEDEPS)
-	$(CC) -c -o $@ $< $(DCIFLAGS)
+	$(CC) -c -o $@ $< $(ERESSFLAGS)
 
-$(DCIOBJ): $(DCISRC)
-	$(CC) -c -o $@ $< $(DCIFLAGS)
+$(ERESSOBJ): $(ERESSSRC)
+	$(CC) -c -o $@ $< $(ERESSFLAGS)
 
-dci: $(CLUSTDESCROBJ) $(CLUSTUTILSOBJ) $(FILEUTILSOBJ) $(COMMANDLINEOBJ) $(DCIOBJ)
-	$(CC) -o $@ $^ $(DCIFLAGS)
+eress: $(CLUSTDESCROBJ) $(CLUSTUTILSOBJ) $(FILEUTILSOBJ) $(COMMANDLINEOBJ) $(ERESSOBJ)
+	$(CC) -o $@ $^ $(ERESSFLAGS)
 	mv $@ $(BDIR)
-	rm $(DCIOBJ)
+	rm $(ERESSOBJ)
 	rm $(CLUSTDESCROBJ)
 	rm $(CLUSTUTILSOBJ)
 	rm $(FILEUTILSOBJ)
@@ -86,39 +75,20 @@ $(HOMGENOBJ): $(HOMGENSRC)
 	$(CC) -c -o $@ $< $(HOMGENFLAGS)
 
 homgen: $(CLUSTDESCROBJ) $(CLUSTUTILSOBJ) $(FILEUTILSOBJ) $(HOMGENOBJ)
-	$(CC) -o $@ $^ $(DCIFLAGS)
+	$(CC) -o $@ $^ $(ERESSFLAGS)
 	mv $@ $(BDIR)
 	rm $(HOMGENOBJ)
 	rm $(CLUSTDESCROBJ)
 	rm $(CLUSTUTILSOBJ)
 	rm $(FILEUTILSOBJ)
 
-$(QUERYOBJ): $(QUERYSRC) $(QUERYDEPS)
-	$(CC) -c -o $@ $< $(QUERYFLAGS)
+$(KRESSOBJ): $(KRESSSRC)
+	$(CC) -c -o $@ $< $(KRESSFLAGS)
 
-query: $(QUERYOBJ)
-	$(CC) -o $@ $^ $(QUERYFLAGS)
+kress: $(CLUSTDESCROBJ) $(CLUSTUTILSOBJ) $(FILEUTILSOBJ) $(KRESSOBJ)
+	$(CC) -o $@ $^ $(KRESSFLAGS)
 	mv $@ $(BDIR)
-	rm $(QUERYOBJ)
-
-$(KMPSOOBJ): $(KMPSOSRC) $(DCIDEPS)
-	$(CC) -c -o $@ $< $(KMPSOFLAGS)
-
-kmpso: $(CLUSTDESCROBJ) $(CLUSTUTILSOBJ) $(FILEUTILSOBJ) $(KMPSOOBJ)
-	$(CC) -o $@ $^ $(KMPSOFLAGS)
-	mv $@ $(BDIR)
-	rm $(KMPSOOBJ)
-	rm $(CLUSTDESCROBJ)
-	rm $(CLUSTUTILSOBJ)
-	rm $(FILEUTILSOBJ)
-
-$(TESTOBJ): $(TESTSRC) $(DCIDEPS)
-	$(CC) -c -o $@ $< $(TESTFLAGS)
-
-dcitest: $(CLUSTDESCROBJ) $(CLUSTUTILSOBJ) $(FILEUTILSOBJ) $(TESTOBJ)
-	$(CC) -o $@ $^ $(TESTFLAGS)
-	mv $@ $(BDIR)
-	rm $(TESTOBJ)
+	rm $(KRESSOBJ)
 	rm $(CLUSTDESCROBJ)
 	rm $(CLUSTUTILSOBJ)
 	rm $(FILEUTILSOBJ)
