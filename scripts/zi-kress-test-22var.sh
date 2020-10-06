@@ -1,0 +1,1 @@
+../bin/kress --dimension:22 --output_file:results/output-zi-kress-22var.txt --swarm_size:2000 --n_seeds:7 --range:3 --n_iterations:1000 --kmeans_interv:20 --print_interv:100 --n_results:132 --rseed:123456 --input_file:systems/cstr_22comp.txt --zi --var_string:"A B AA AB BA BB C CA CB AC BC CC D DA DB DADB AAB BAB AABB CCA CBAC BCCC" --comp_on:0

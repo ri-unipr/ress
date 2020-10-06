@@ -1,0 +1,1 @@
+../bin/kress --dimension:22 --swarm_size:2000 --n_seeds:7 --range:3 --n_iterations:501 --kmeans_interv:20 --print_interv:100 --n_results:100 --rseed:123456 --input_file:systems/cstr_22comp.txt --output_file:results/output-tc-kress-22var.txt --tc --comp_on:0 --hs_input_file:hsfiles/hsfile-22comp.txt 
