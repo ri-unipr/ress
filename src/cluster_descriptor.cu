@@ -1,7 +1,7 @@
 
 /*
 * File:   cluster_descriptor.cu
-* Author: Emilio Vicari, Michele Amoretti
+* Authors: Emilio Vicari, Michele Amoretti
 */
 
 #include "cluster_descriptor.h"

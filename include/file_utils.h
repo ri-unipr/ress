@@ -1,7 +1,7 @@
 
 /*
 * File:   file_utils.h
-* Author: Emilio Vicari, Michele Amoretti
+* Authors: Emilio Vicari, Michele Amoretti
 */
 
 #ifndef FILE_UTILS_H

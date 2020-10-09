@@ -1,7 +1,7 @@
 
 /*
 * File:   cluster_utils.h
-* Author: Emilio Vicari, Michele Amoretti
+* Authors: Emilio Vicari, Michele Amoretti
 */
 
 #ifndef CLUSTER_UTILS_H

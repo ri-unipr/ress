@@ -2,7 +2,6 @@
 SDIR = ./src
 IDIR = ./include
 BDIR = ./bin
-DDIR = ./device
 CUDADIR = /usr/local/cuda/samples/common/inc/
 CC = nvcc
 

@@ -1,6 +1,6 @@
 
 /*
-* File:   hom_gen.cu
+* File:   homgen.cu
 * Author: Michele Amoretti
 */
 

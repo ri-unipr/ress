@@ -1,7 +1,7 @@
 
 /*
 * File:   register_utils.h
-* Author: Emilio Vicari, Michele Amoretti
+* Authors: Emilio Vicari, Michele Amoretti
 */
 
 #ifndef REGISTER_UTILS_H

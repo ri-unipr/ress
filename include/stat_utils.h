@@ -1,7 +1,7 @@
 
 /*
 * File:   stat_utils.h
-* Author: Emilio Vicari, Michele Amoretti
+* Authors: Emilio Vicari, Michele Amoretti
 */
 
 #ifndef STAT_UTILS_H

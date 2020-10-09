@@ -1,7 +1,7 @@
 
 /*
 * File:   dci_kernels.h
-* Author: Emilio Vicari, Laura Sani, Michele Amoretti
+* Authors: Emilio Vicari, Laura Sani, Michele Amoretti
 */
 
 #ifndef DCI_KERNELS_H

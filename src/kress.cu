@@ -1,12 +1,11 @@
 
 /*
 * File:   kmpso.cu
-* Author: Gianluigi Silvestri, Michele Amoretti, Stefano Cagnoni
+* Authors: Gianluigi Silvestri, Michele Amoretti, Stefano Cagnoni
 */
 
-// SC aggiunto per usare calloc
-#include <stdlib.h>
 
+#include <stdlib.h>
 #include <iostream>
 #include <cmath>
 #include <numeric>
@@ -34,7 +33,6 @@ int S; // Swarm size
 int K; // Number of seeds
 int N; // number of results to keep
 unsigned int rseed; // random seed
-//int hseed; // random seed for h. system computation
 double *v; // vector for distance
 double *V;
 double *X;
@@ -466,10 +464,8 @@ int main(int argc, char * argv[]) {
   int s; // Rank of the current particle
   int c1; // intervals for identify niches
   int interv; // print interval
-  // SC aggiunti per parsing stringa variabili
   char **tokens;
   int vstr=0;
-  //char *sptr;
   int i, *vars;
 
   pi = acos( -1 ); // for rastrigin function
@@ -487,11 +483,9 @@ int main(int argc, char * argv[]) {
   interv = 100;
   N = 100;
   rseed = 123456;
-  //hseed = rseed;
   configuration.input_file_name = "";
   string output_file = "./output-zi-kmpso.txt";
   configuration.hs_input_file_name = "";
-  //configuration.hs_output_file_name = "";
   string chosen_index = "zI";
   configuration.tc_index = false;
   configuration.zi_index = true;
@@ -585,310 +579,300 @@ int main(int argc, char * argv[]) {
       temp = "[" + std::to_string(j) + "] ";
       var_string += temp;
     }
+    }
+
+  configuration.good_config = true;
+
+  if(strlen(var_string.data())>0)
+  {
+    vstr=1;
+    tokens = (char**) calloc(D,sizeof(char*));
+    for (i=0; i<D; i++)
+    {
+      tokens[i] = (char *) malloc((strlen(var_string.data())+2)*sizeof(char));
+    }
   }
 
-  /*
-  if ((configuration.tc_index == true) && (configuration.hs_input_file_name == ""))
-  {
-  if (configuration.hs_output_file_name == "")
-  configuration.hs_output_file_name = "hsfile.txt";
-}
-*/
+  vars=(int *) malloc(D*sizeof(int));
+  //sptr = (char *) malloc (strlen(var_string.data())*sizeof(char));
+  //strcpy(sptr, var_string.data());
 
-configuration.good_config = true;
-
-if(strlen(var_string.data())>0)
-{
-  vstr=1;
-  tokens = (char**) calloc(D,sizeof(char*));
-  for (i=0; i<D; i++)
+  tokens[0]=strtok((char *) var_string.data()," ");
+  for (i=1; i<D; i++)
   {
-    tokens[i] = (char *) malloc((strlen(var_string.data())+2)*sizeof(char));
+    tokens[i]=strtok(NULL," ");
   }
-}
 
-vars=(int *) malloc(D*sizeof(int));
-//sptr = (char *) malloc (strlen(var_string.data())*sizeof(char));
-//strcpy(sptr, var_string.data());
+  results.resize(N);
+  g.resize(N);
+  X = (double*) malloc(S*D*sizeof(double));
+  V = (double*) malloc(S*D*sizeof(double));
+  P = (double*) malloc(S*D*sizeof(double));
+  v = (double*) malloc(D*sizeof(double));
+  seed = (int*) malloc(S*sizeof(int));
+  fx = (double*) malloc(S*sizeof(double));
+  fp = (double*) malloc(S*sizeof(double));
+  size = (int*) malloc(K*sizeof(int));
+  M = (double*) malloc(K*D*sizeof(double));
+  bp = (double*) malloc(K*D*sizeof(double));
+  sigma = (double*) malloc(K*sizeof(double));
+  fm = (double*) malloc(K*sizeof(double));
+  best = (bool*) malloc(K*sizeof(bool));
 
-tokens[0]=strtok((char *) var_string.data()," ");
-for (i=1; i<D; i++)
-{
-  tokens[i]=strtok(NULL," ");
-}
+  cudaMalloc((void **)&d_X, sizeof(double*)*S*D);
+  cudaMalloc((void **)&d_V, sizeof(double*)*S*D);
+  cudaMalloc((void **)&d_P, sizeof(double*)*S*D);
+  cudaMalloc((void **)&d_seed, sizeof(int*)*S);
+  cudaMalloc((void **)&d_sigma, sizeof(double*)*K);
+  cudaMalloc((void **)&d_bp, sizeof(double*)*K*D);
+  a=1024/D;
+  TPB=512;
+  NB=S*D/512;
+  cudaMalloc ( &devStates, S*D*sizeof( curandState ) );
 
-results.resize(N);
-g.resize(N);
-X = (double*) malloc(S*D*sizeof(double));
-V = (double*) malloc(S*D*sizeof(double));
-P = (double*) malloc(S*D*sizeof(double));
-v = (double*) malloc(D*sizeof(double));
-seed = (int*) malloc(S*sizeof(int));
-fx = (double*) malloc(S*sizeof(double));
-fp = (double*) malloc(S*sizeof(double));
-size = (int*) malloc(K*sizeof(int));
-M = (double*) malloc(K*D*sizeof(double));
-bp = (double*) malloc(K*D*sizeof(double));
-sigma = (double*) malloc(K*sizeof(double));
-fm = (double*) malloc(K*sizeof(double));
-best = (bool*) malloc(K*sizeof(bool));
+  // create application object
+  app = new dci::Application(configuration);
 
-cudaMalloc((void **)&d_X, sizeof(double*)*S*D);
-cudaMalloc((void **)&d_V, sizeof(double*)*S*D);
-cudaMalloc((void **)&d_P, sizeof(double*)*S*D);
-cudaMalloc((void **)&d_seed, sizeof(int*)*S);
-cudaMalloc((void **)&d_sigma, sizeof(double*)*K);
-cudaMalloc((void **)&d_bp, sizeof(double*)*K*D);
-a=1024/D;
-TPB=512;
-NB=S*D/512;
-cudaMalloc ( &devStates, S*D*sizeof( curandState ) );
+  // initialize application
+  app->init();
 
-// create application object
-app = new dci::Application(configuration);
+  fitness=0;
+  w = 0.73;
+  c = 2.05;
+  // D-cube data
+  xmin = -x; xmax = x;
 
-// initialize application
-app->init();
+  //-----------------------INITIALIZATION
+  setup_kernel <<< NB,TPB >>> ( devStates, (unsigned long) rseed );
+  srand(rseed);
 
-fitness=0;
-w = 0.73;
-c = 2.05;
-// D-cube data
-xmin = -x; xmax = x;
-
-//-----------------------INITIALIZATION
-setup_kernel <<< NB,TPB >>> ( devStates, (unsigned long) rseed );
-srand(rseed);
-
-for ( s = 0; s < S; s++ ) // create S particles
-{
-  b = rand()%3;
-
-  if (b==0)
+  for ( s = 0; s < S; s++ ) // create S particles
   {
-    do
+    b = rand()%3;
+
+    if (b==0)
+    {
+      do
+      {
+        r1 = rand()%D;
+        r2 = rand()%D;
+      }while(r1==r2);
+      for (d = 0; d < D; d++)
+      {
+        if(r1==d || r2==d)
+        {
+          X[s*D+d] = alea( 0, xmax );
+        }
+        else
+        X[s*D+d] = alea(xmin,0);
+        V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
+        P[s*D+d] = X[s*D+d];
+      }
+    }
+    else if(b==1)
     {
       r1 = rand()%D;
-      r2 = rand()%D;
-    }while(r1==r2);
-    for (d = 0; d < D; d++)
-    {
-      if(r1==d || r2==d)
+      for (d = 0; d < D; d++)
       {
-        X[s*D+d] = alea( 0, xmax );
+        X[s*D+d] = alea(xmin, 0);
       }
-      else
-      X[s*D+d] = alea(xmin,0);
-      V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
-      P[s*D+d] = X[s*D+d];
-    }
-  }
-  else if(b==1)
-  {
-    r1 = rand()%D;
-    for (d = 0; d < D; d++)
-    {
-      X[s*D+d] = alea(xmin, 0);
-    }
-    for(d=0; d<r1; d++)
-    {
-      r2 = rand()%D;
-      X[s*D+r2] = alea(0,xmax);
-    }
-
-    for (d = 0; d < D; d++)
-    {
-      V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
-      P[s*D+d] = X[s*D+d];
-    }
-  }
-  else
-  {
-    for (d = 0; d < D; d++)
-    {
-      X[s*D+d] = alea( xmin, xmax );
-      V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
-      P[s*D+d] = X[s*D+d];
-    }
-  }
-}
-cudaMemcpy(d_X, X, S*D*sizeof(double), cudaMemcpyHostToDevice);
-cudaMemcpy(d_V, V, S*D*sizeof(double), cudaMemcpyHostToDevice);
-output1 = perf(S,D);
-for (s=0; s<S; s++)
-{
-  if(!(output1[s] <= DBL_MAX))output1[s]=0;
-  fx[s] = output1[s];
-  fp[s] = fx[s];
-  for (int u=0; u<N; u++)
-  {
-    if(fx[s]>results[u])
-    {
-      for(int q=N-1; q>u; q--)
+      for(d=0; d<r1; d++)
       {
-        results[q]=results[q-1];
-        g[q]=g[q-1];
+        r2 = rand()%D;
+        X[s*D+r2] = alea(0,xmax);
       }
-      results[u]=fx[s];
-      g[u]=group[s];
-      break;
-    }
-    else if(fx[s]==results[u])
-    {
-      if (g[u]==group[s]) break;
-    }
-  }
-}
-cudaMemcpy(d_P, P, S*D*sizeof(double), cudaMemcpyHostToDevice);
 
-k_means(); //k-means algorithm
-cudaMemcpy(d_seed, seed, S*sizeof(int), cudaMemcpyHostToDevice);
-
-//--------------------ITERATIONS
-for (int t=1; t<T; t++)
-{
-  update();
-  if (t % c1 ==0)
-  {
-    k_means();
-    identify_niches();
-  }
-
-  //PRINT ON SCREEN
-  std::ofstream outfile2;
-
-  int var_count = 0;
-  if(t%interv==0 || t==T-1)
-  {
-//    if (strlen(sptr)>1)
-    if (vstr==1)
-    {
-      for (i=0;i<D;i++)
-      outfile2 << tokens[i] << "\t";
-
-      if (comp_on == 0)
-      outfile2 << chosen_index << "\n";
-      else
-      outfile2 << chosen_index << "\tComp\n";
-    }
-
-    for(int u=0; u<N;u++)
-    {
-      for(i=0;i<D;i++) vars[i]=-1;
-      int vcount=0;
-      for (d=0; d<g[u].size(); d++)
+      for (d = 0; d < D; d++)
       {
-        for (i=var_count; i<g[u][d]; i++)
+        V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
+        P[s*D+d] = X[s*D+d];
+      }
+    }
+    else
+    {
+      for (d = 0; d < D; d++)
+      {
+        X[s*D+d] = alea( xmin, xmax );
+        V[s*D+d] = (alea( xmin, xmax ) - X[s*D+d])/2; // Non uniform
+        P[s*D+d] = X[s*D+d];
+      }
+    }
+  }
+  cudaMemcpy(d_X, X, S*D*sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_V, V, S*D*sizeof(double), cudaMemcpyHostToDevice);
+  output1 = perf(S,D);
+  for (s=0; s<S; s++)
+  {
+    if(!(output1[s] <= DBL_MAX))output1[s]=0;
+    fx[s] = output1[s];
+    fp[s] = fx[s];
+    for (int u=0; u<N; u++)
+    {
+      if(fx[s]>results[u])
+      {
+        for(int q=N-1; q>u; q--)
+        {
+          results[q]=results[q-1];
+          g[q]=g[q-1];
+        }
+        results[u]=fx[s];
+        g[u]=group[s];
+        break;
+      }
+      else if(fx[s]==results[u])
+      {
+        if (g[u]==group[s]) break;
+      }
+    }
+  }
+  cudaMemcpy(d_P, P, S*D*sizeof(double), cudaMemcpyHostToDevice);
+
+  k_means(); //k-means algorithm
+  cudaMemcpy(d_seed, seed, S*sizeof(int), cudaMemcpyHostToDevice);
+
+  //--------------------ITERATIONS
+  for (int t=1; t<T; t++)
+  {
+    update();
+    if (t % c1 ==0)
+    {
+      k_means();
+      identify_niches();
+    }
+
+    //PRINT ON SCREEN
+    std::ofstream outfile2;
+
+    int var_count = 0;
+    if(t%interv==0 || t==T-1)
+    {
+      if (vstr==1)
+      {
+        for (i=0;i<D;i++)
+        outfile2 << tokens[i] << "\t";
+
+        if (comp_on == 0)
+        outfile2 << chosen_index << "\n";
+        else
+        outfile2 << chosen_index << "\tComp\n";
+      }
+
+      for(int u=0; u<N;u++)
+      {
+        for(i=0;i<D;i++) vars[i]=-1;
+        int vcount=0;
+        for (d=0; d<g[u].size(); d++)
+        {
+          for (i=var_count; i<g[u][d]; i++)
+          {
+            outfile2 << "0" << "\t";
+          }
+          outfile2 << "1" << "\t";
+          vars[vcount]=i;
+          var_count = g[u][d]+1;
+          vcount=vcount+1;
+        }
+        while (var_count < D)
         {
           outfile2 << "0" << "\t";
+          var_count++;
         }
-        outfile2 << "1" << "\t";
-        vars[vcount]=i;
-        var_count = g[u][d]+1;
-        vcount=vcount+1;
-      }
-      while (var_count < D)
-      {
-        outfile2 << "0" << "\t";
-        var_count++;
-      }
 
-      if (comp_on == 0)
-      {
-        outfile2 << results[u]<< "\n";
+        if (comp_on == 0)
+        {
+          outfile2 << results[u]<< "\n";
+        }
+        else
+        {
+          outfile2 << results[u]<< "\t";
+          int  nv=0;
+          while (vars[nv]>=0) nv++;
+          for(i=0;i<nv-1;i++) outfile2 << tokens[vars[i]] << "+";
+          outfile2 << tokens[vars[nv-1]] << "\n";
+        }
+        var_count = 0;
       }
-      else
-      {
-        outfile2 << results[u]<< "\t";
-        int  nv=0;
-        while (vars[nv]>=0) nv++;
-        for(i=0;i<nv-1;i++) outfile2 << tokens[vars[i]] << "+";
-        outfile2 << tokens[vars[nv-1]] << "\n";
-      }
-      var_count = 0;
+      cout << "fitness computed " << fitness << " times\n";
+      cout << "Time taken: " << (double)(clock() - tStart)/CLOCKS_PER_SEC << "s\n";
+      cout <<"------------------------\n\n";
     }
-    cout << "fitness computed " << fitness << " times\n";
-    cout << "Time taken: " << (double)(clock() - tStart)/CLOCKS_PER_SEC << "s\n";
-    cout <<"------------------------\n\n";
-  }
 
-  //PRINT ON FILE
+    //PRINT ON FILE
 
-  if(t==T-1)
-  {
-    std::ofstream outfile;
-
-    outfile.open(output_file, std::ios_base::app);
-
-    var_count = 0;
-
-//    if(strlen(sptr)>1)
-    if(vstr)
+    if(t==T-1)
     {
-      for(i=0;i<D;i++) {
-        outfile << tokens[i] << "\t";
-      }
+      std::ofstream outfile;
 
-      if (comp_on == 0)
-      {
-        outfile << chosen_index << "\n";
-      }
-      else
-      {
-        outfile << chosen_index << "\tComp\n";
-      }
+      outfile.open(output_file, std::ios_base::app);
 
-    }
-    for(int u=0; u<N;u++) {
-      for(i=0;i<D;i++) vars[i]=-1;
-      int vcount=0;
-      for (d=0; d<g[u].size(); d++)
+      var_count = 0;
+
+      if(vstr)
       {
-        for (i=var_count; i<g[u][d]; i++)
+        for(i=0;i<D;i++) {
+          outfile << tokens[i] << "\t";
+        }
+
+        if (comp_on == 0)
+        {
+          outfile << chosen_index << "\n";
+        }
+        else
+        {
+          outfile << chosen_index << "\tComp\n";
+        }
+
+      }
+      for(int u=0; u<N;u++) {
+        for(i=0;i<D;i++) vars[i]=-1;
+        int vcount=0;
+        for (d=0; d<g[u].size(); d++)
+        {
+          for (i=var_count; i<g[u][d]; i++)
+          {
+            outfile << "0" << "\t";
+          }
+          outfile << "1" << "\t";
+
+          vars[vcount]=i;
+          var_count = g[u][d]+1;
+          vcount=vcount+1;
+        }
+        while (var_count < D)
         {
           outfile << "0" << "\t";
+          var_count++;
         }
-        outfile << "1" << "\t";
 
-        vars[vcount]=i;
-        var_count = g[u][d]+1;
-        vcount=vcount+1;
+        if (comp_on == 0)
+        {
+          outfile << results[u]<< "\n";
+        }
+        else
+        {
+          outfile << results[u]<< "\t";
+          int  nv=0;
+          while (vars[nv]>=0) nv++;
+          for(i=0;i<nv-1;i++) outfile << tokens[vars[i]] << "+";
+          outfile << tokens[vars[nv-1]] << "\n";
+        }
+        var_count = 0;
       }
-      while (var_count < D)
-      {
-        outfile << "0" << "\t";
-        var_count++;
-      }
-
-      if (comp_on == 0)
-      {
-        outfile << results[u]<< "\n";
-      }
-      else
-      {
-        outfile << results[u]<< "\t";
-        int  nv=0;
-        while (vars[nv]>=0) nv++;
-        for(i=0;i<nv-1;i++) outfile << tokens[vars[i]] << "+";
-        outfile << tokens[vars[nv-1]] << "\n";
-      }
-      var_count = 0;
+      outfile.close();
     }
-    outfile.close();
+
+
+    outfile2.close();
+
   }
+  // delete app object
+  cudaFree(d_X);
+  cudaFree(d_V);
+  cudaFree(d_P);
+  cudaFree(d_bp);
+  cudaFree(d_seed);
+  cudaFree(d_sigma);
+  delete app;
 
-
-  outfile2.close();
-
-}
-// delete app object
-cudaFree(d_X);
-cudaFree(d_V);
-cudaFree(d_P);
-cudaFree(d_bp);
-cudaFree(d_seed);
-cudaFree(d_sigma);
-delete app;
-
-return 0;
+  return 0;
 }

@@ -1,7 +1,7 @@
 
 /*
 * File:   cluster_utils.cu
-* Author: Emilio Vicari, Michele Amoretti
+* Authors: Emilio Vicari, Michele Amoretti
 */
 
 #include <iostream>

@@ -1,7 +1,7 @@
 
 /*
 * File:   cuda_utils.h
-* Author: Emilio Vicari, Michele Amoretti
+* Authors: Emilio Vicari, Michele Amoretti
 */
 
 #ifndef CUDA_UTILS_H

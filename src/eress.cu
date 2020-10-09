@@ -1,7 +1,7 @@
 
 /*
-* File:   dci.cu
-* Author: Emilio Vicari, Michele Amoretti
+* File:   eress.cu
+* Authors: Emilio Vicari, Michele Amoretti
 */
 
 #include <cstdlib>

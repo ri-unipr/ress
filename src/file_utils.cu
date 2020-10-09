@@ -1,7 +1,7 @@
 
 /*
 * File:   file_utils.cu
-* Author: Emilio Vicari, Michele Amoretti
+* Authors: Emilio Vicari, Michele Amoretti
 */
 
 

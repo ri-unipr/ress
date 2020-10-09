@@ -1,7 +1,7 @@
 
 /*
 * File:   command_line.h
-* Author: Emilio Vicari, Michele Amoretti
+* Authors: Emilio Vicari, Michele Amoretti
 */
 
 #ifndef COMMAND_LINE_H

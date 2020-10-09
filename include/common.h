@@ -1,7 +1,7 @@
 
 /*
  * File:   common.h
- * Author: Emilio Vicari, Michele Amoretti
+ * Authors: Emilio Vicari, Michele Amoretti
  */
 
 #ifndef COMMON_H
