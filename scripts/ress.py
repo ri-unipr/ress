@@ -2,7 +2,7 @@ import subprocess
 import os
 import glob
 from os import path
-from sieve import execute_sieve
+from hgrouping import execute_hgrouping
 
 directory_input_file = "systems/"
 if not path.exists(directory_input_file):
@@ -50,7 +50,7 @@ for filePath in fileList:
         print("Error while deleting file : ", filePath)
 
 
-SIEVE = True
+HGROUPING = True
 
 #number of variables (starting system)
 NA=21;
@@ -80,7 +80,7 @@ if not os.path.isfile(arg_hs_file):
     args = ("../bin/homgen", "--input_file:"+directory_input_file+input_file, "--hs_output_file:"+arg_hs_file)
     popen = subprocess.call(args)
 
-if not SIEVE:
+if not HGROUPING:
     if (num_var < 18):
         args = ("../bin/eress", "--input_file:"+arg_input_file, "--tc", "--n_results:100", "--output_file:"+arg_output_file, "--hs_input_file:"+arg_hs_file, "--verbose")
     else:
@@ -88,5 +88,5 @@ if not SIEVE:
         #args = ("../bin/kmpso", "--dimension:"+str(NA), "--swarm_size:2000", "--n_seeds:7", "--range:3", "--n_iterations:501", "--kmeans_interv:20", "--print_interv:100", "--N_results:100", "--rseed:123456", "--inputfile:"+input_file, "--outputfile:"+output_file, "--tc", "--comp_on:0", "--hsinputfile:"+hs_file)
     popen = subprocess.call(args)
 
-if SIEVE:
-    execute_sieve(NA, NB, variables, input_file, input_file_only_data, directory_input_file, input_encoding_file, hs_file, directory_hs_file, directory_output_file, var_string)
+if HGROUPING:
+    execute_hgrouping(NA, NB, variables, input_file, input_file_only_data, directory_input_file, input_encoding_file, hs_file, directory_hs_file, directory_output_file, var_string)

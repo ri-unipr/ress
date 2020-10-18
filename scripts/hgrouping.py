@@ -6,7 +6,7 @@ import os
 from os import path
 
 
-def execute_sieve(NA, NB, variables, input_file, input_file_only_data, directory_input_file, input_encoding_file, hs_file, directory_hs_file, directory_output_file, var_string):
+def execute_hgrouping(NA, NB, variables, input_file, input_file_only_data, directory_input_file, input_encoding_file, hs_file, directory_hs_file, directory_output_file, var_string):
 
     #source system file: variable encoding
     forig_var_bit = input_encoding_file
@@ -36,7 +36,7 @@ def execute_sieve(NA, NB, variables, input_file, input_file_only_data, directory
         sys.exit()
 
 
-    #GENERATION OF THE SIEVE FILE HEADING LINE
+    #GENERATION OF THE HGROUPING FILE HEADING LINE
 
     #header of binary coding variables
     header_var_bin=""
@@ -273,7 +273,7 @@ def execute_sieve(NA, NB, variables, input_file, input_file_only_data, directory
 
 	#generation of ordered data
         for i in range(0,data_len):
-            #new order data (sieve)
+            #new order data (hgrouping)
             for j in range(0,new_names_len):
                 if '+' in new_names[j]:
                     vars=new_names[j].split('+')

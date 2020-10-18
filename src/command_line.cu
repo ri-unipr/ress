@@ -265,6 +265,8 @@ namespace dci
     //std::cout << "--metric:value       metric used to rank clusters ('rel' for relevance index, 'int' for integration; default: 'rel')\n";
     //std::cout << "--rseed:number       sets random number generator seed\n";
     std::cout << "--n_results:number   sets number of results to keep (default 30)\n";
+
+    /* TODO to be uncommented and tested
     std::cout << "--sv                 applies sieving algorithm\n";
     std::cout << "--sv-max:number      sets number of results to keep internally (default 100000). Only with --sv option\n";
     std::cout << "--sv-mode:number     sets sieving mode for super-cluster selection (1 = fixed | 2 = differential | 3 = mean | 4 = manual, default 2)\n";
@@ -272,6 +274,8 @@ namespace dci
     std::cout << "--sv-diff:number     sets min difference (%) for differential sieving mode (differential mode, default 100)\n";
     std::cout << "--sv-diff-num:number sets number of clusters to search for differential sieving mode (differential mode, default 5)\n";
     std::cout << "--sv-out:file        sets output file for new system data after sieving\n";
+    */
+
     //std::cout << "--delete-input       deletes input file after reading\n";
     //std::cout << "--device-info        writes device statistics at startup\n";
     std::cout << "--verbose            turn on debug messages\n";
