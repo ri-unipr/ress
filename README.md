@@ -1,4 +1,4 @@
-# ReSS (Relevance Set Search)
+# ReSS (Relevant Set Search)
 
 Implementation in C++ (requires CUDA 9 or higher), with Python >=3.7 scripts.
 
