@@ -81,11 +81,10 @@ if not os.path.isfile(arg_hs_file):
     popen = subprocess.call(args)
 
 if not HGROUPING:
-    if (num_var < 18):
+    if (num_var < 20):
         args = ("../bin/eress", "--input_file:"+arg_input_file, "--tc", "--n_results:100", "--output_file:"+arg_output_file, "--hs_input_file:"+arg_hs_file, "--verbose")
     else:
         args = ("../bin/kress", "--dimension:"+str(NA), "--swarm_size:2000", "--n_seeds:7", "--range:3", "--n_iterations:501", "--kmeans_interv:20", "--print_interv:100", "-n_results:100", "--rseed:123456", "--input_file:"+arg_input_file, "--output_file:"+arg_output_file, "--tc", "--var_string:"+var_string, "--comp_on:0", "--hs_input_file:"+arg_hs_file)
-        #args = ("../bin/kmpso", "--dimension:"+str(NA), "--swarm_size:2000", "--n_seeds:7", "--range:3", "--n_iterations:501", "--kmeans_interv:20", "--print_interv:100", "--N_results:100", "--rseed:123456", "--inputfile:"+input_file, "--outputfile:"+output_file, "--tc", "--comp_on:0", "--hsinputfile:"+hs_file)
     popen = subprocess.call(args)
 
 if HGROUPING:
