@@ -25,11 +25,9 @@ namespace dci
 
     // default values
     pointer_to_data->input_file_name = "";
-    //pointer_to_data->rand_seed = 123456;
     pointer_to_data->tc_index = true;
     pointer_to_data->res = 100;
-    pointer_to_data->output_file_name = "./results/output-tc-dci-21var.txt";
-    //pointer_to_data->hs_input_file_name = "./hsfile-21.txt";
+    pointer_to_data->output_file_name = "./results/output-tc-eress-21var.txt";
     pointer_to_data->verbose = true;
     pointer_to_data->sieving = false;
 

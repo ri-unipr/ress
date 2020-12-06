@@ -484,7 +484,7 @@ int main(int argc, char * argv[]) {
   N = 100;
   rseed = 123456;
   configuration.input_file_name = "";
-  string output_file = "./output-zi-kmpso.txt";
+  string output_file = "./output-zi-kress.txt";
   configuration.hs_input_file_name = "";
   string chosen_index = "zI";
   configuration.tc_index = false;
@@ -803,7 +803,7 @@ int main(int argc, char * argv[]) {
     {
       std::ofstream outfile;
 
-      outfile.open(output_file, std::ios_base::app);
+      outfile.open(output_file, std::ios_base::trunc);
 
       var_count = 0;
 
