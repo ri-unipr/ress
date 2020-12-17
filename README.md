@@ -41,8 +41,9 @@ The following paramaters must be defined and passed as arguments to kress:
 To run the tools, edit and use the ress.py script (in the scripts/ folder):
 
 * python ress.py
+------------------------------------------
 
-The datasets in this package are the following:
+The main datasets in this package are the following:
 * CSTR16 
 * CSTR26
 * CSTR28
@@ -80,4 +81,4 @@ of linear reactions (RAF1), the presence of whose root is guaranteed from the ou
 reaction chain (RAF2).
 
 All CSTR systems have been perturbed across fixed points, in order to trigger a response in the concentration of (some) other species, recording the transients.
-According to the used discretization and of the performed perturabations, some variables may result to be constant, thus they are excluded from the considered system (the number of variables can so be less than 28, 26, or 16).
+According to the used discretization and of the performed perturabations, some variables may result to be constant, thus they are excluded from the considered system (leading to the 21-variable and 22-variable systems).
