@@ -28,15 +28,14 @@ present in CSTRs and therefore playing the role of the “food” species consti
 proportional to their concentration. The analyzed scheme involves enzymatic condensations, whose process is considered as being composed of three
 steps: the ﬁrst two creates (reversibly) a temporary complex (composed by one of the two substrates and the catalyst) that can be used by a third reaction, which combines the
 complex and a second substrate to ﬁnally release the catalyst and the ﬁnal product. The aforementioned three steps are summarized as follows:
-(1) Complex formation: A + C ⟶ C_comp -> A:C.
-(2) Complex dissociation: A:C ⟶ C_diss -> A + C.
-(3) Final condensation: A:C + B ⟶ C_cond -> AB + C.
-C_comp, C_diss, and C_cond are the reaction kinetic constants of complex formation, complex dissociation, and final condensation, respectively. The dynamic of the systems is described adopting a deterministic approach, whereby the reaction
-scheme is translated into a set of Ordinary Differential Equations ruled by the mass action law and integrated by means of a custom Euler method
-with step-size control. The main entities of the model are molecular species
-(“polymers”), represented by linear strings of letters (A, B, C, and D). There are seven distinct condensation reactions divided into two distinct RAF pathways: a chain
-of linear reactions (RAF1), the presence of whose root is guaranteed from the outside, and a RAF where two reciprocally catalysing reactions are the roots of another linear
-reaction chain (RAF2).
+
+(1) Complex formation: A + C ⟶ C_comp -> A:C
+
+(2) Complex dissociation: A:C ⟶ C_diss -> A + C
+
+(3) Final condensation: A:C + B ⟶ C_cond -> AB + C
+
+C_comp, C_diss, and C_cond are the reaction kinetic constants of complex formation, complex dissociation, and final condensation, respectively. The dynamic of the systems is described adopting a deterministic approach, whereby the reaction scheme is translated into a set of Ordinary Differential Equations ruled by the mass action law and integrated by means of a custom Euler method with step-size control. The main entities of the model are molecular species (“polymers”), represented by linear strings of letters (A, B, C, and D). There are seven distinct condensation reactions divided into two distinct RAF pathways: a chain of linear reactions (RAF1), the presence of whose root is guaranteed from the outside, and a RAF where two reciprocally catalysing reactions are the roots of another linear reaction chain (RAF2).
 
 All CSTR systems have been perturbed across fixed points, in order to trigger a response in the concentration of (some) other species, recording the transients.
 According to the used discretization and of the performed perturabations, some variables may result to be constant, thus they are excluded from the considered system (leading to the 21-variable and 22-variable systems).
