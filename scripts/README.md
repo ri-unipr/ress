@@ -1,5 +1,7 @@
 This folder contains an example ress.py script and a set of bash scripts that refer to different datasets.
 
+The clean.sh script deletes the contents of the directories results/, variables/ and systems/ to remove partial results which may interfere with subsequent executions of the scripts. We advice to activate it before running ress.py with the HGROUPING flag set to true.
+
 The main datasets are:
 
 * CSTR16 
