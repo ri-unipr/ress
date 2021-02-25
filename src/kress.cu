@@ -483,6 +483,7 @@ int main(int argc, char * argv[]) {
   interv = 100;
   N = 100;
   rseed = 123456;
+  configuration.rand_seed = rseed;
   configuration.input_file_name = "";
   string output_file = "./output-zi-kress.txt";
   configuration.hs_input_file_name = "";
@@ -551,6 +552,8 @@ int main(int argc, char * argv[]) {
       output_file = value;
       else if (name == "--hs_input_file")
       configuration.hs_input_file_name = value;
+      //else if (name == "--hs_count")
+      //configuration.hs_count = std::atoi(value.data());
       //else if (name == "--hsoutputfile")
       //configuration.hs_output_file_name = value;
       else if (name == "--var_string")

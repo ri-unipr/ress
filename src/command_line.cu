@@ -194,7 +194,7 @@ namespace dci
           }
         }
         /*
-        else if (name == "--hs-count")
+        else if (name == "--hs_count")
         {
           pointer_to_data->hs_count = std::atoi(value.data());
         }
@@ -297,7 +297,7 @@ namespace dci
     //std::cout << "HS output file       " << configuration.hs_output_file_name << '\n';
     //std::cout << "HS data input file   " << configuration.hs_data_input_file_name << '\n';
     //std::cout << "HS data output file  " << configuration.hs_data_output_file_name << '\n';
-    std::cout << "HS sample count      " << configuration.hs_count << '\n';
+    //std::cout << "HS sample count      " << configuration.hs_count << '\n';
     //std::cout << "Metric               " << configuration.metric << '\n';
     //std::cout << "Random seed          " << configuration.rand_seed << '\n';
     std::cout << "Results to keep      " << configuration.res << '\n';

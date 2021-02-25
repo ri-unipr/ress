@@ -17,6 +17,7 @@ void printUsage(char* command)
   std::cout << "USAGE:\n" << command << " --input_file:file --hs_output_file:file \n\n";
   std::cout << "PARAMETERS:\n";
   std::cout << "--input_file           path to the system file to be analyzed\n";
+  std::cout << "--hs_count             homogeneous system sample count\n";
   std::cout << "--hs_output_file       path to the homogeneous system file to be created\n";
   std::cout << "\n";
 }
@@ -41,7 +42,7 @@ int main(int argc, char** argv) {
   dci::RunInfo_p configuration(new dci::RunInfo());
   int pos;
 
-  if (argc < 2) // bad command line parameters, print error and usage
+  if (argc < 3) // bad command line parameters, print error and usage
   {
     configuration->error_message = "no arguments specified";
     cout << "Error: " << configuration->error_message << "\n\n";
@@ -102,13 +103,16 @@ int main(int argc, char** argv) {
         else
         configuration->input_file_name = value;
       }
+      else if (name == "--hs_count")
+        configuration->hs_count = std::atoi(value.data());
+
       else if (name == "--hs_output_file")
       configuration->hs_output_file_name = value;
 
       //else if (name == "--hs-data-out")
       //configuration->hs_data_output_file_name = value;
-      /*
-      else if (name == "--rand-seed")
+
+      else if (name == "--rseed")
       {
         if ((configuration->rand_seed = std::atoi(value.data())) == 0)
         {
@@ -116,7 +120,7 @@ int main(int argc, char** argv) {
           return -1;
         }
       }
-
+      /*
       else
       {
         configuration->error_message = "unknown argument: " + name;
@@ -139,7 +143,7 @@ int main(int argc, char** argv) {
   configuration->verbose = true;
   configuration->tc_index = true;
   srand(time(NULL));
-  configuration->rand_seed = rand();
+  //configuration->rand_seed = rand();
 
   // store start/end time
   clock_t start = clock(), stop;

@@ -127,6 +127,11 @@ namespace dci
       const bool& has_mi_mask, register_t* mutual_information_mask)
       {
         ifstream in_file(filename);
+        if (in_file.fail())
+        {
+          cout << "Input file does not exist!\n";
+          exit(0);
+        }
         register_t mask;
         string dummy;
 
@@ -323,6 +328,11 @@ namespace dci
     void loadSystemStats(const string& filename, const unsigned int& N, float* system_stats)
     {
       ifstream in_file(filename);
+      if (in_file.fail())
+      {
+        cout << "HS input file does not exist!\n";
+        exit(0);
+      }
 
       for (unsigned int col = 0; col != N; ++col)
       in_file >> system_stats[2 * col] >> system_stats[2 * col + 1];

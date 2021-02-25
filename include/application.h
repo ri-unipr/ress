@@ -792,11 +792,13 @@ namespace dci
     unsigned long long cc = 0;
     unsigned long long total_clusters = 0;
     mt19937 rng(conf->rand_seed);
+    //cout << "rng: " << rng << "\n";
 
     clock_t start = clock();
 
     // store total number of clusters according to computation type
     if (!IsFullComputation) total_clusters = conf->hs_count * (NA - 2);
+    cout << "total_clusters: " << total_clusters << "\n";
 
     // store only one cluster
     dci::RegisterUtils::setAllBits<1>(clusters, N, S);
@@ -824,7 +826,6 @@ namespace dci
       // get number of clusters to use according to percentage
       if (!IsFullComputation)
       cc = 0;
-
       // cycle all r-sized clusters
       while (
         (IsFullComputation && dci::ClusterUtils::getNextClusterMask(cur_cluster, has_next)) ||
@@ -832,7 +833,6 @@ namespace dci
         {
           // get random cluster if necessary
           if (!IsFullComputation) dci::ClusterUtils::getNextRandomClusterMask(cur_cluster, rng);
-
           // get complementary cluster and store it in the next memory block
           dci::ClusterUtils::getComplementaryClusterMask(cur_cluster + S, cur_cluster, N);
 
@@ -846,7 +846,6 @@ namespace dci
             // invoke kernel for current batch
             //callKernel<false,false,false,false,false>(C, clusters, cluster_sizes, output);
             callKernelCard<false,false,false,false,false>(C, clusters, cluster_sizes, output, cardinalities);
-
             // reset extra cluster count
             to_subtract = 0;
 
@@ -856,7 +855,6 @@ namespace dci
               if (cluster_sizes[2*c] != 1) rs[cluster_sizes[2*c]].push(output[2*c]); // 1-sized clusters are not relevant
               if (cluster_sizes[2*c+1] != NA / 2) rs[cluster_sizes[2*c+1]].push(output[2*c+1]); else to_subtract++; // in case of an even number of variables, avoid counting N/2-sized clusters twice
             }
-
             // reset current cluster pointer
             cur_cluster = clusters;
 
@@ -866,7 +864,6 @@ namespace dci
             // print progress
             if (IsFullComputation) printProgress(start, n_clusters);
             else printProgress(start, n_clusters, total_clusters);
-
             // reset number of clusters
             C = 0;
           }
