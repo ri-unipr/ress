@@ -542,8 +542,10 @@ int main(int argc, char * argv[]) {
       interv = atoi(value.data());
       else if (name == "--n_results")
       N = atoi(value.data());
-      else if (name == "--rseed")
-      rseed = atoi(value.data());
+      else if (name == "--rseed") {
+        configuration.rand_seed = atoi(value.data());
+        rseed = configuration.rand_seed;
+      }
       //else if (name == "--hseed")
       //hseed = atoi(value.data());
       else if (name == "--input_file")
@@ -582,7 +584,7 @@ int main(int argc, char * argv[]) {
       temp = "[" + std::to_string(j) + "] ";
       var_string += temp;
     }
-    }
+  }
 
   configuration.good_config = true;
 
@@ -632,6 +634,8 @@ int main(int argc, char * argv[]) {
   TPB=512;
   NB=S*D/512;
   cudaMalloc ( &devStates, S*D*sizeof( curandState ) );
+
+  cout << "rseed: " << rseed << endl;
 
   // create application object
   app = new dci::Application(configuration);
